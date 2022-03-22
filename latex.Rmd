@@ -1,0 +1,48 @@
+---
+title: "latex"
+author: "Paula Wu"
+date: "3/22/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The logistic model can be defined as:
+$$log(\frac{\pi_i}{1-\pi_i}) = \bf{X}\boldsymbol{\beta}$$
+
+$$\pi_i = \frac{e^{\bf{X}\boldsymbol{\beta}}}{1 + e^{\bf{X}\boldsymbol{\beta}}}$$
+
+
+The likelihood function is thus:
+$$L(\beta) = \prod_{i = 0}^{n}(\frac{e^{\bf{X}\beta}}{1 + e^{\bf{X}\beta}})^{y_i}(\frac{1}{1 + e^{\bf{X}\beta}})^{1-y_i}$$
+
+Log likelihood function:
+
+$$l(\beta) = \sum_{i = 0}^{n} ( y_i * X\beta - log(1 + e^{X\beta})) $$
+
+
+Gradient
+$$\nabla l(\beta) = \left(\begin{array}{c}
+\sum_{i=1}^{n} y_{i}-\pi_i \\
+\sum_{i=1}^{n} x_{i} \times\left(y_{i}- \pi_i\right)
+\end{array}\right)$$
+
+where $\pi_i = \frac{e^{\bf{X}\boldsymbol{\beta}}}{1 + e^{\bf{X}\boldsymbol{\beta}}}$ as mentioned above
+
+Hessian Matrix
+$$
+\begin{aligned}
+\nabla^{2} f\left(\beta\right) &=-\sum_{i=1}^{n}\left(\begin{array}{c}
+1 \\
+x_{i}
+\end{array}\right)\left(\begin{array}{cc}
+1 & x_{i}
+\end{array}\right) p_{i}\left(1-p_{i}\right) \\
+&=-\left(\begin{array}{cc}
+\sum p_{i}\left(1-p_{i}\right) & \sum x_{i} p_{i}\left(1-p_{i}\right) \\
+\sum x_{i} p_{i}\left(1-p_{i}\right) & \sum x_{i}^{2} p_{i}\left(1-p_{i}\right)
+\end{array}\right)
+\end{aligned}
+$$
