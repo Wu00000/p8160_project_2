@@ -1,10 +1,39 @@
 ---
-title: "Untitled"
+title: "Breast Cancer Diagnosis"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, echo = FALSE, warnings = FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(viridis)
+
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
+
+```{r}
+cancer = 
+  read_csv("./data/breast-cancer.csv") %>% 
+  janitor::clean_names() %>% 
+  select(-33) %>% 
+  mutate(diagnosis = recode(diagnosis, `M` = 1, `B` = 0),
+         diagnosis = as.factor(diagnosis)) 
+
+```
+
+
 
 
