@@ -24,16 +24,52 @@ scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
 
+
+## Data import & cleanness
 ```{r}
-cancer = 
+# Import data
+breast_cancer = 
   read_csv("./data/breast-cancer.csv") %>% 
   janitor::clean_names() %>% 
-  select(-33) %>% 
-  mutate(diagnosis = recode(diagnosis, `M` = 1, `B` = 0),
-         diagnosis = as.factor(diagnosis)) 
+  select(-c(1, 33)) %>% 
+  mutate(diagnosis = as.factor(recode(diagnosis, `M` = 1, `B` = 0))) %>% 
+  mutate_each_(funs(scale(.)), c(2:31))
+
+# Standardize predictors
+# Newton-Raphson Algorithm
+pred_1 <- as.tibble(breast_cancer[2:11])
+bc_scale1 <- cbind(rep(1, nrow(breast_cancer)), pred_1, breast_cancer$diagnosis)
+names(bc_scale1) = c("intercept", names(breast_cancer)[2:11], "outcome")
+  
+# Coordinate-wise descending Algorithm
+pred_2 <- as.tibble(breast_cancer[2:31])
+bc_scale2 <- cbind(rep(1, nrow(breast_cancer)), pred_2, breast_cancer$diagnosis)
+names(bc_scale1) = c("intercept", names(breast_cancer)[2:11], "outcome")
+```
+
+
+## Likelihood function, Gradient, and Hessian matrix
+```{r}
 
 ```
 
+
+## Modified Newton-Raphson Algorithm
+```{r}
+# Comparsion to `glm` func
+```
+
+
+## Logistic-LASSO model
+```{r}
+
+```
+
+
+## 5-fold CV
+```{r}
+
+```
 
 
 
