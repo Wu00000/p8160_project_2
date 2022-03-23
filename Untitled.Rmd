@@ -31,7 +31,8 @@ scale_fill_discrete = scale_fill_viridis_d
 breast_cancer = 
   read_csv("./data/breast-cancer.csv") %>% 
   select(-c(1, 33)) %>% 
-  mutate(diagnosis = as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0)))) %>% 
+  mutate(diagnosis = 
+           as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0))) - 1) %>% 
   mutate_each_(funs(scale(.)), c(2:31))
 
 # Standardize predictors
@@ -99,7 +100,6 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
         cur <- prev - step * solve(stuff$hess) %*% stuff$grad
       }
     }
-    
     stuff <- func(dat, cur)
     
     res <- rbind(res, c(i, stuff$loglik, cur))
