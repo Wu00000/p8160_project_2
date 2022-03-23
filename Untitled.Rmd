@@ -38,21 +38,36 @@ breast_cancer =
 # Standardize predictors
 # Newton-Raphson Algorithm
 pred_1 <- as.tibble(breast_cancer[2:11])
-bc_scale1 <- cbind(rep(1, nrow(breast_cancer)), pred_1, breast_cancer$diagnosis)
+bc_scale1 <- as.matrix(cbind(rep(1, nrow(breast_cancer)), pred_1, breast_cancer$diagnosis))
 names(bc_scale1) = c("intercept", names(breast_cancer)[2:11], "outcome")
   
 # Coordinate-wise descending Algorithm
 pred_2 <- as.tibble(breast_cancer[2:31])
-bc_scale2 <- cbind(rep(1, nrow(breast_cancer)), pred_2, breast_cancer$diagnosis)
+bc_scale2 <- as.matrix(cbind(rep(1, nrow(breast_cancer)), pred_2, breast_cancer$diagnosis))
 names(bc_scale1) = c("intercept", names(breast_cancer)[2:11], "outcome")
 ```
 
 
 ## Likelihood function, Gradient, and Hessian matrix
 ```{r}
-
+# Compute likelihood function, gradient, and Hessian matrix
+compute_stat <- function(dat, betavec){
+  u <- dat[, -12] %*% betavec
+  pi <- exp(u) / (1 + exp(u))
+  # Log-likelihood at betavec
+  loglik <- sum(dat$diagnosis * u - log(1 + exp(u)))
+  # Gradient at betavec
+  grad <- t(dat[, -12]) %*% (dat$diagnosis - pi)
+  # Hessian at betavec
+  hess <- -(pi * (1 - pi) * t(dat[, -12]) %*% dat[, -12])
+  
+  return(list(loglik = loglik, grad = grad, hess = hess))
+}
 ```
 
+```{r}
+compute_stat(bc_scale1, betavec = as.vector(rep(1, 11)))
+```
 
 ## Modified Newton-Raphson Algorithm
 ```{r}
