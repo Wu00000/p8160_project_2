@@ -108,11 +108,13 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 }
 ```
 
+
 ## NR results
 ```{r}
 # NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
 # NewtonRaphson(bc_scale1_x, compute_stat, rep(10, 11))
 ```
+
 
 ## Test `glm`
 ```{r}
@@ -122,7 +124,7 @@ glm(diagnosis ~., family = binomial(link = "logit"), data = breast_cancer[, 1:31
 
 ## Logistic-LASSO model
 ```{r}
-
+# 
 ```
 
 
