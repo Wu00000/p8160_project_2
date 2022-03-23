@@ -52,7 +52,7 @@ bc_scale2_y <- bc_scale2[, 32]
 ```
 
 
-## Likelihood function, Gradient, and Hessian matrix
+## Modified Newton-Raphson method
 ```{r}
 # Compute likelihood function, gradient, and Hessian matrix
 compute_stat <- function(dat, betavec){
@@ -108,10 +108,15 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 }
 ```
 
-
-## Modified Newton-Raphson Algorithm
+## NR results
 ```{r}
-# Comparsion to `glm` func
+# NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
+# NewtonRaphson(bc_scale1_x, compute_stat, rep(10, 11))
+```
+
+## Test `glm`
+```{r}
+glm(diagnosis ~., family = binomial(link = "logit"), data = breast_cancer[, 1:31])
 ```
 
 
