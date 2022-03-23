@@ -24,10 +24,14 @@ $$l(\beta) = \sum_{i = 0}^{n} ( y_i * X\beta - log(1 + e^{X\beta})) $$
 
 
 Gradient
-$$\nabla l(\beta) = \left(\begin{array}{c}
-\sum_{i=1}^{n} y_{i}-\pi_i \\
-\sum_{i=1}^{n} x_{i} \times\left(y_{i}- \pi_i\right)
-\end{array}\right)$$
+$$\nabla l(\beta) = \begin{pmatrix}
+\sum_{i=1}^{n} (y_{i}-\pi_i) \\ 
+\sum_{i=1}^{n} x_{i1} \times\left(y_{i}- \pi_i\right) \\
+. \\
+. \\
+. \\
+\sum_{i=1}^{n} x_{in} \times\left(y_{i}- \pi_i\right) \\
+\end{pmatrix}$$
 
 where $\pi_i = \frac{e^{\bf{X}\boldsymbol{\beta}}}{1 + e^{\bf{X}\boldsymbol{\beta}}}$ as mentioned above
 
@@ -39,10 +43,10 @@ $$
 x_{i}
 \end{array}\right)\left(\begin{array}{cc}
 1 & x_{i}
-\end{array}\right) p_{i}\left(1-p_{i}\right) \\
+\end{array}\right) \pi_{i}\left(1-\pi_{i}\right) \\
 &=-\left(\begin{array}{cc}
-\sum p_{i}\left(1-p_{i}\right) & \sum x_{i} p_{i}\left(1-p_{i}\right) \\
-\sum x_{i} p_{i}\left(1-p_{i}\right) & \sum x_{i}^{2} p_{i}\left(1-p_{i}\right)
+\sum \pi_{i}\left(1-\pi_{i}\right) & \sum x_{i} \pi_{i}\left(1-\pi_{i}\right) \\
+\sum x_{i} \pi_{i}\left(1-\pi_{i}\right) & \sum x_{i}^{2} \pi_{i}\left(1-\pi_{i}\right)
 \end{array}\right)
 \end{aligned}
 $$
