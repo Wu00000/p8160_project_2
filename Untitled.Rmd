@@ -81,7 +81,6 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
   prevloglik <- -Inf
   
   while (i < maxier && abs(stuff$loglik - prevloglik) > tol) {
-    # Base case
     i <- i + 1
     step <- 1
     prevloglik <- stuff$loglik
