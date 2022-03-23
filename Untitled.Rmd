@@ -30,9 +30,8 @@ scale_fill_discrete = scale_fill_viridis_d
 # Import data
 breast_cancer = 
   read_csv("./data/breast-cancer.csv") %>% 
-  janitor::clean_names() %>% 
   select(-c(1, 33)) %>% 
-  mutate(diagnosis = as.factor(recode(diagnosis, `M` = 1, `B` = 0))) %>% 
+  mutate(diagnosis = as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0)))) %>% 
   mutate_each_(funs(scale(.)), c(2:31))
 
 # Standardize predictors
@@ -40,11 +39,15 @@ breast_cancer =
 pred_1 <- as.tibble(breast_cancer[2:11])
 bc_scale1 <- as.matrix(cbind(rep(1, nrow(breast_cancer)), pred_1, breast_cancer$diagnosis))
 names(bc_scale1) = c("intercept", names(breast_cancer)[2:11], "outcome")
+bc_scale1_x <- bc_scale1[, -12]
+bc_scale1_y <- bc_scale1[, 12]
   
 # Coordinate-wise descending Algorithm
 pred_2 <- as.tibble(breast_cancer[2:31])
 bc_scale2 <- as.matrix(cbind(rep(1, nrow(breast_cancer)), pred_2, breast_cancer$diagnosis))
 names(bc_scale1) = c("intercept", names(breast_cancer)[2:11], "outcome")
+bc_scale2_x <- bc_scale2[, -32]
+bc_scale2_y <- bc_scale2[, 32]
 ```
 
 
@@ -52,22 +55,60 @@ names(bc_scale1) = c("intercept", names(breast_cancer)[2:11], "outcome")
 ```{r}
 # Compute likelihood function, gradient, and Hessian matrix
 compute_stat <- function(dat, betavec){
-  u <- dat[, -12] %*% betavec
+  x <- dat
+  y <- breast_cancer$diagnosis
+  u <- x %*% betavec
   pi <- exp(u) / (1 + exp(u))
   # Log-likelihood at betavec
-  loglik <- sum(dat$diagnosis * u - log(1 + exp(u)))
+  loglik <- sum(y * u - log(1 + exp(u)))
   # Gradient at betavec
-  grad <- t(dat[, -12]) %*% (dat$diagnosis - pi)
+  grad <- t(x) %*% (y - pi)
   # Hessian at betavec
-  hess <- -(pi * (1 - pi) * t(dat[, -12]) %*% dat[, -12])
+  hess <- -t(x) %*% diag(as.vector(pi * (1 - pi))) %*% x
   
   return(list(loglik = loglik, grad = grad, hess = hess))
 }
+
+# Modified Mewton-Raphson method
+NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
+  i <- 0
+  cur <- start
+  
+  # Computate log-likelihood, gradient, and Hessian matrix
+  stuff <- func(dat, cur)
+  res <- c(0, stuff$loglik, cur)
+  prevloglik <- -Inf
+  
+  while (i < maxier && abs(stuff$loglik - prevloglik) > tol) {
+    # Base case
+    i <- i + 1
+    step <- 1
+    prevloglik <- stuff$loglik
+    prev <- cur
+    cur <- prev - solve(stuff$hess) %*% stuff$grad
+    
+    # Step halving and re-direction
+    while (func(dat, cur)$loglik < stuff$loglik) {
+      if (!all(eigen(stuff$hess)$values < 0)) {
+        gamma <- max(eigen(stuff$hess)$values)
+        new_hess <- stuff$hess - gamma * diag(nrow = dim(dat)[1])
+        cur <- prev - solve(new_hess) %*% stuff$grad
+      }
+      else {
+        step <- step / 2
+        cur <- prev - step * solve(stuff$hess) %*% stuff$grad
+      }
+    }
+    
+    stuff <- func(dat, cur)
+    
+    res <- rbind(res, c(i, stuff$loglik, cur))
+  }
+  
+  return(res)
+}
 ```
 
-```{r}
-compute_stat(bc_scale1, betavec = as.vector(rep(1, 11)))
-```
 
 ## Modified Newton-Raphson Algorithm
 ```{r}
