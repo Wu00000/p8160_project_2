@@ -124,7 +124,57 @@ glm(diagnosis ~., family = binomial(link = "logit"), data = breast_cancer[, 1:31
 
 ## Logistic-LASSO model
 ```{r}
-# 
+# Soft Threshold function
+sf <- function(beta, lambda) {
+
+  if (beta > 0 & lambda < abs(beta)) {
+    beta <- beta - lambda
+  }
+  
+  if (beta < 0 & lambda < abs(beta)) {
+    beta <- beta + lambda
+  }
+  beta <- 0
+  return(beta)
+}
+
+
+# Coordinate-wise LASSO
+cd_lasso <- function(dat, betavec, lambda, maxier = 300, tol = 1e-15) {
+  x <- dat
+  y <- breast_cancer$diagnosis
+  i <- 0
+  loglik <- 0
+  prevloglik <- -Inf
+  res <- c(0, loglik, betavec)
+  
+  while (i < maxier && abs(loglik - prevloglik) > tol) {
+    i <- i + 1
+    
+    for (j in 1:dim(x)[2]) {
+      u <- x %*% betavec
+      pi <- exp(u) / (1 + exp(u))
+      w <- pi * (1 - pi)
+      z <- x %*% betavec + (y - pi) / (pi * (1 - pi))
+      z_dej <- x[, -j] %*% betavec[, -j]
+      
+      betavec[j] <- 
+        sf(sum(w * x[, j] %*% (z - z_dej)), lambda) / (sum(w * x[, j]^2))
+    }
+    
+    loglik <- sum(w * (z - x %*% betavec)^2) / (2 * dim(x)[1]) + lambda * sum(abs(betavec))
+    
+    prevloglik <- loglik
+    res <- rbind(res, c(i, loglik, betavec)) 
+  }
+  
+  return(res)
+}
+```
+
+
+```{r}
+cd_lasso(bc_scale1_x, rep(1, 11), 2)
 ```
 
 
