@@ -1,0 +1,205 @@
+---
+title: "Untitled"
+output: pdf_document
+---
+
+---
+title: "Breast Cancer Diagnosis"
+output: pdf_document
+---
+
+```{r setup, echo = FALSE, warnings = FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(viridis)
+library(corrplot)
+
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+
+## Data import
+```{r}
+# --- Import data ---
+breast_cancer = 
+  read_csv("./breast-cancer.csv") %>% 
+  select(-c(1, 33)) %>% 
+  mutate(diagnosis = 
+           as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0))) - 1) %>% 
+  mutate_each_(funs(scale(.)), c(2:31))
+
+# --- Data partition ---
+# Newton-Raphson Algorithm
+pred_1 <- as.tibble(breast_cancer[2:11])
+bc_scale1 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
+                             pred_1, outcome = breast_cancer$diagnosis))
+bc_scale1_x <- bc_scale1[, -12]
+bc_scale1_y <- bc_scale1[, 12]
+  
+# Coordinate-wise descending Algorithm
+pred_2 <- as.tibble(breast_cancer[2:31])
+bc_scale2 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
+                             pred_2, outcome = breast_cancer$diagnosis))
+bc_scale2_x <- bc_scale2[, -32]
+bc_scale2_y <- bc_scale2[, 32]
+
+# --- Split train vs. test? ---
+```
+
+
+## Add EDA
+```{r}
+# Correlation plot
+corrplot::corrplot(cor(breast_cancer[2:31]), type = "full",
+                   tl.cex = .7, tl.col = "black")
+```
+
+
+## Modified Newton-Raphson method
+```{r}
+# Compute likelihood function, gradient, and Hessian matrix
+compute_stat <- function(dat, betavec){
+  x <- dat # include intercept
+  y <- breast_cancer$diagnosis
+  u <- x %*% betavec # n * 1 vector
+  pi <- exp(u) / (1 + exp(u))
+  # Log-likelihood
+  loglik <- sum(y * u - log(1 + exp(u)))
+  # Gradient -- (p + 1) * 1 vector
+  grad <- t(x) %*% (y - pi)
+  # Hessian -- (p + 1) * (p + 1) matrix
+  hess <- -t(x) %*% diag(c(pi * (1 - pi))) %*% x
+  
+  return(list(loglik = loglik, grad = grad, hess = hess))
+}
+
+# Modified Mewton-Raphson method
+NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
+  i <- 0 # Iteration indicator
+  cur <- start # Current position / beta's
+  
+  # Computate log-likelihood, gradient, and Hessian matrix
+  stuff <- func(dat, cur)
+  res <- c(0, stuff$loglik, cur) # Store results
+  prevloglik <- -Inf # Ensure iterations
+  
+  while (i < maxier && abs(stuff$loglik - prevloglik) > tol) {
+    # --- Base case ---
+    i <- i + 1
+    step <- 1 # Original step size
+    prevloglik <- stuff$loglik
+    prev <- cur
+    cur <- prev - solve(stuff$hess) %*% stuff$grad
+    
+    # Step halving and re-direction
+    while (func(dat, cur)$loglik < stuff$loglik) {
+      # Check if all eigenvalues are negative
+      # IF NOT, redirection
+      if (!all(eigen(stuff$hess)$values < 0)) {
+        gamma <- max(eigen(stuff$hess)$values)
+        new_hess <- stuff$hess - gamma * diag(nrow = dim(dat)[1])
+        cur <- prev - solve(new_hess) %*% stuff$grad
+      }
+      # Reduce step size by half
+      else {
+        step <- step / 2
+        cur <- prev - step * solve(stuff$hess) %*% stuff$grad
+      }
+    }
+    stuff <- func(dat, cur)
+    
+    res <- rbind(res, c(i, stuff$loglik, cur))
+  }
+  return(res)
+}
+```
+
+
+## NR results examples
+```{r}
+# NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
+# NewtonRaphson(bc_scale1_x, compute_stat, rep(10, 11))
+
+# The result of complete number of predictors is not ideal
+# due to some potential collinearity
+```
+
+
+## Compare with `glm` reults
+```{r}
+# Fit a logistic model
+glm_fit <- glm(diagnosis ~., family = binomial(link = "logit"), data = breast_cancer[, 1:11])
+
+# Comparison
+NR_result <- NewtonRaphson(bc_scale1_x, compute_stat, rep(10, 11))
+round(tail(NR_result, 1)[, 3:13], 3) == round(as.vector(glm_fit$coefficients), 3) # return all TRUE
+```
+
+
+## Logistic-LASSO model
+```{r}
+# Soft Threshold function
+sf <- function(beta, lambda) {
+  beta <- ifelse(lambda < abs(beta), 
+                 ifelse(beta > 0, beta - lambda, beta + lambda), 0)
+  return(beta)
+}
+
+# --- To be modified ---
+# Coordinate-wise LASSO
+# Fix lambda
+cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-15) {
+  x <- dat
+  y <- breast_cancer$diagnosis
+  i <- 0
+  loglik <- 0
+  prevloglik <- -Inf
+  res <- c(0, loglik, betavec)
+  
+  while (i < maxier & abs(loglik - prevloglik) > tol) {
+    i <- i + 1
+    
+    for (j in 1:length(betavec)) {
+      u <- x %*% betavec
+      pi <- exp(u) / (1 + exp(u))
+      w <- pi * (1 - pi)
+      w <- ifelse(abs(w)<1e-5, 1e-5, w)  # set up a lower bound o.w. omega will introduce NaN
+      z <- x %*% betavec + (y - pi)/w  
+      z_dej <- x[, -j] %*% betavec[-j]
+      betavec[j] <- 
+        sf(sum(w * x[, j] * (z - z_dej)), lambda) / (sum(w * x[, j]^2))
+    }
+    
+    loglik <- sum(w * (z - x %*% betavec)^2) / (2 * dim(x)[1]) + lambda * sum(abs(betavec))
+    
+    prevloglik <- loglik
+    res <- rbind(res, c(i, loglik, betavec)) 
+  }
+  
+  return(res)
+}
+cd_lasso(bc_scale2_x, rep(1,31), lambda = 0.8)
+```
+
+
+## 5-fold CV
+```{r}
+
+```
+
+
+
+
