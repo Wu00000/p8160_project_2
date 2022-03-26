@@ -35,7 +35,7 @@ scale_fill_discrete = scale_fill_viridis_d
 ```{r}
 # --- Import data ---
 breast_cancer = 
-  read_csv("./breast-cancer.csv") %>% 
+  read_csv("./data/breast-cancer.csv") %>% 
   select(-c(1, 33)) %>% 
   mutate(diagnosis = 
            as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0))) - 1) %>% 
@@ -149,7 +149,7 @@ round(tail(NR_result, 1)[, 3:13], 3) == round(as.vector(glm_fit$coefficients), 3
 ```
 
 
-## Logistic-LASSO model
+## Soft threshold and coor-wise Lasso
 ```{r}
 # Soft Threshold function
 sf <- function(beta, lambda) {
@@ -158,40 +158,71 @@ sf <- function(beta, lambda) {
   return(beta)
 }
 
-# --- To be modified ---
-# Coordinate-wise LASSO
-# Fix lambda
-cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-15) {
-  x <- dat
-  y <- breast_cancer$diagnosis
+# Coordinate-wise LASSO with fixed lambda
+cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) {
+  x <- dat # n * (p + 1) matrix, standardized
+  y <- breast_cancer$diagnosis # n * 1 vector
   i <- 0
   loglik <- 0
-  prevloglik <- -Inf
+  prevloglik <- -Inf # ensure iterations
   res <- c(0, loglik, betavec)
   
-  while (i < maxier & abs(loglik - prevloglik) > tol) {
+  while (i < maxier && abs(loglik - prevloglik) > tol) {
     i <- i + 1
+    prevloglik <- loglik
     
     for (j in 1:length(betavec)) {
       u <- x %*% betavec
       pi <- exp(u) / (1 + exp(u))
+      # working weights
       w <- pi * (1 - pi)
-      w <- ifelse(abs(w)<1e-5, 1e-5, w)  # set up a lower bound o.w. omega will introduce NaN
-      z <- x %*% betavec + (y - pi)/w  
+      w <- ifelse(w < 1e-5, 1e-5, w)
+      # working response
+      z <- x %*% betavec + (y - pi) / w  
       z_dej <- x[, -j] %*% betavec[-j]
       betavec[j] <- 
         sf(sum(w * x[, j] * (z - z_dej)), lambda) / (sum(w * x[, j]^2))
     }
     
-    loglik <- sum(w * (z - x %*% betavec)^2) / (2 * dim(x)[1]) + lambda * sum(abs(betavec))
+    loglik <- 
+      sum(w * (z - x %*% betavec)^2) / (2 * dim(x)[1]) + lambda * sum(abs(betavec))
     
-    prevloglik <- loglik
     res <- rbind(res, c(i, loglik, betavec)) 
   }
   
   return(res)
 }
-cd_lasso(bc_scale2_x, rep(1,31), lambda = 0.8)
+```
+
+
+### Try...
+```{r}
+a <- cd_lasso(bc_scale1_x, rep(1,11), lambda = 2)
+```
+
+
+## path-wise coordinate-wise Lasso
+```{r}
+# --- To be modified ---
+pathwise_cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) {
+  sort(lambda, decreasing = TRUE)
+  pathwise_res <- NA
+  
+  for (i in 1:length(lambda)) {
+    cd_results <- cd_lasso(dat, betavec, lambda[i], maxier, tol)
+    
+    pathwise_res <- rbind(pathwise_res, 
+                          c(i, lambda[i], as.tibble(cd_results)[, -c(1, 2)]))
+  }
+  
+  return(pathwise_res)
+}
+```
+
+
+### Try...
+```{r}
+pathwise_cd_lasso(bc_scale1, rep(1, 11), lambda = exp(seq(5, -5, length = 100)))
 ```
 
 
