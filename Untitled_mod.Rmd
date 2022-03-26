@@ -13,6 +13,7 @@ library(tidyverse)
 library(ggplot2)
 library(viridis)
 library(corrplot)
+library(pROC)
 
 knitr::opts_chunk$set(
   warning = FALSE,
@@ -35,7 +36,7 @@ scale_fill_discrete = scale_fill_viridis_d
 ```{r}
 # --- Import data ---
 breast_cancer = 
-  read_csv("./breast-cancer.csv") %>% 
+  read_csv("./data/breast-cancer.csv") %>% 
   select(-c(1, 33)) %>% 
   mutate(diagnosis = 
            as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0))) - 1) %>% 
@@ -231,9 +232,55 @@ b <- pathwise_cd_lasso(bc_scale2_x, rep(1, 31), lambda = seq(5, 0, length = 100)
 
 ## 5-fold CV
 ```{r}
-
+# create data partition
+n = 500
+x1 = rnorm(n, mean = 1)
+x2 = rnorm(n, mean = 1)
+eps = rnorm(n, sd = 0.5)
+y = sin(x1) + (x2)^2 + eps
+a = data.frame(y = y, x1  = x1)
+#cbind(a, x2)
+indexTrain = sample(nrow(a), 400, replace = F)
+a[indexTrain, ]
+a[-indexTrain, ]
+#cut(seq_along(a), n = 5, lables = F)
+fold = cut(seq(1,nrow(a)),breaks = 5,labels = FALSE)
+which(fold == 3, arr.ind = T)
 ```
 
+```{r}
+cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
+  fold_index = cut(seq(1,nrow(raw_data)),breaks = kfolds, labels = FALSE)  # 1:length(data)
+  auc = vector()
+  #se = vector()
+  for (i in length(lambda_vec)){
+    # shuffle data
+    raw_data = raw_data[sample(nrow(raw_data)), ]
+    fold_auc = vector()
+    for (j in 1:kfolds){
+      validation = raw_data[fold_index == j, ]  
+      print(validation)
+      training = raw_data[fold_index != j, -ncol(raw_data)]  #454
+      cd_results = cd_lasso(training, betavec, lambda[i])
+      curbetavec = cd_results[dim(cd_results)[1], -c(1, 2)]
+      u = validation[,-ncol(validation)] %*% curbetavec
+      prob = exp(u)/(1 + exp(u))
+      fold_auc[j] = auc(prob, validation$outcome)
+    }
+    # auc fill in
+    auc[i] = mean(fold_auc)
+    
+  }
+  
+}
+fold_index = cut(seq(1,nrow(bc_scale1)),breaks = 5, labels = F)
+c = bc_scale1[sample(nrow(bc_scale1)), ]
+training = c[fold_index != 1, -ncol(c)]
+cd_lasso(training, betavec = rep(1, 11), lambda = 1)
+#typeof(c[fold_index == 2, ])
+#bc_scale1[,-ncol(bc_scale1)]
+cv(bc_scale1, lambda_vec = seq(5, 0, length = 100), betavec = rep(1, 11))
+```
 
 
 
