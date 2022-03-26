@@ -35,7 +35,7 @@ scale_fill_discrete = scale_fill_viridis_d
 ```{r}
 # --- Import data ---
 breast_cancer = 
-  read_csv("./data/breast-cancer.csv") %>% 
+  read_csv("./breast-cancer.csv") %>% 
   select(-c(1, 33)) %>% 
   mutate(diagnosis = 
            as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0))) - 1) %>% 
@@ -197,7 +197,7 @@ cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) {
 
 ### Try...
 ```{r}
-a <- cd_lasso(bc_scale1_x, rep(1,11), lambda = 2)
+a <- cd_lasso(bc_scale1_x, rep(1,11), lambda = 10)
 ```
 
 
@@ -208,13 +208,16 @@ pathwise_cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) 
   sort(lambda, decreasing = TRUE)
   pathwise_res <- NA
   
-  for (i in 1:length(lambda)) {
-    cd_results <- cd_lasso(dat, betavec, lambda[i], maxier, tol)
+  for (j in 1:length(lambda)) {
+    cd_results <- cd_lasso(dat, betavec, lambda[j], maxier, tol)
     
+    betavec <- cd_results[dim(cd_results)[1], -c(1, 2)]
+    loglik <- cd_results[dim(cd_results)[1], 2]
     pathwise_res <- rbind(pathwise_res, 
-                          c(i, lambda[i], as.tibble(cd_results)[, -c(1, 2)]))
+                          c(j, lambda[j], loglik, betavec))
+    
   }
-  
+    
   return(pathwise_res)
 }
 ```
@@ -222,7 +225,7 @@ pathwise_cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) 
 
 ### Try...
 ```{r}
-pathwise_cd_lasso(bc_scale1, rep(1, 11), lambda = exp(seq(5, -5, length = 100)))
+b <- pathwise_cd_lasso(bc_scale2_x, rep(1, 31), lambda = seq(5, 0, length = 100))
 ```
 
 
