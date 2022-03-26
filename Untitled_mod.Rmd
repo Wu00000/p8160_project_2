@@ -159,10 +159,12 @@ sf <- function(beta, lambda) {
   return(beta)
 }
 
+
 # Coordinate-wise LASSO with fixed lambda
-cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) {
+y <- breast_cancer$diagnosis
+
+cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
   x <- dat # n * (p + 1) matrix, standardized
-  y <- breast_cancer$diagnosis # n * 1 vector
   i <- 0
   loglik <- 0
   prevloglik <- -Inf # ensure iterations
@@ -198,7 +200,7 @@ cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) {
 
 ### Try...
 ```{r}
-a <- cd_lasso(bc_scale1_x, rep(1,11), lambda = 10)
+a <- cd_lasso(bc_scale1_x, y, rep(1,11), lambda = 10)
 ```
 
 
@@ -210,7 +212,7 @@ pathwise_cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) 
   pathwise_res <- NA
   
   for (j in 1:length(lambda)) {
-    cd_results <- cd_lasso(dat, betavec, lambda[j], maxier, tol)
+    cd_results <- cd_lasso(dat, y = breast_cancer$diagnosis, betavec, lambda[j], maxier, tol)
     
     betavec <- cd_results[dim(cd_results)[1], -c(1, 2)]
     loglik <- cd_results[dim(cd_results)[1], 2]
@@ -258,28 +260,32 @@ cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
     raw_data = raw_data[sample(nrow(raw_data)), ]
     fold_auc = vector()
     for (j in 1:kfolds){
-      validation = raw_data[fold_index == j, ]  
-      print(validation)
-      training = raw_data[fold_index != j, -ncol(raw_data)]  #454
-      cd_results = cd_lasso(training, betavec, lambda[i])
+      validation = raw_data[fold_index == j, ]
+      train_x = raw_data[fold_index != j, -ncol(raw_data)]
+      train_y <- raw_data[fold_index != j, ncol(raw_data)]
+      
+      cd_results = cd_lasso(train_x, train_y, betavec, lambda_vec[i])
       curbetavec = cd_results[dim(cd_results)[1], -c(1, 2)]
+      
       u = validation[,-ncol(validation)] %*% curbetavec
       prob = exp(u)/(1 + exp(u))
-      fold_auc[j] = auc(prob, validation$outcome)
+      
+     fold_auc[j] = auc(prob, as.factor(validation[,ncol(validation)]))
     }
     # auc fill in
     auc[i] = mean(fold_auc)
     
   }
-  
+  return(auc)
 }
-fold_index = cut(seq(1,nrow(bc_scale1)),breaks = 5, labels = F)
-c = bc_scale1[sample(nrow(bc_scale1)), ]
-training = c[fold_index != 1, -ncol(c)]
-cd_lasso(training, betavec = rep(1, 11), lambda = 1)
+#fold_index = cut(seq(1,nrow(bc_scale1)),breaks = 5, labels = F)
+#c = bc_scale1[sample(nrow(bc_scale1)), ]
+#training = c[fold_index != 1, -ncol(c)]
+#cd_lasso(training, betavec = rep(1, 11), lambda = 1)
 #typeof(c[fold_index == 2, ])
 #bc_scale1[,-ncol(bc_scale1)]
 cv(bc_scale1, lambda_vec = seq(5, 0, length = 100), betavec = rep(1, 11))
+auc(0.6, 0.8)
 ```
 
 
