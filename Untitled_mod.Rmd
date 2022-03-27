@@ -59,20 +59,36 @@ breast_cancer =
 
 # --- Data partition ---
 # Newton-Raphson Algorithm
+set.seed(2022)
+trRows <- createDataPartition(breast_cancer$diagnosis, p = 0.8, list = FALSE)
+
+# mean predictors
 pred_1 <- as.tibble(breast_cancer[2:11])
 bc_scale1 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
                              pred_1, outcome = breast_cancer$diagnosis))
+
+# train
+bc_scale1 <- bc_scale1[trRows, ]
 bc_scale1_x <- bc_scale1[, -12]
 bc_scale1_y <- bc_scale1[, 12]
-  
-# Coordinate-wise descending Algorithm
+
+# test
+t_bc_scale1_x <- bc_scale1[-trRows, -12]
+t_bc_scale1_y <- bc_scale1[-trRows, 12]
+
+# All predictors
 pred_2 <- as.tibble(breast_cancer[2:31])
 bc_scale2 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
                              pred_2, outcome = breast_cancer$diagnosis))
+
+# train
+bc_scale2 <- bc_scale2[trRows, ]
 bc_scale2_x <- bc_scale2[, -32]
 bc_scale2_y <- bc_scale2[, 32]
 
-# --- Split train vs. test? ---
+# test
+t_bc_scale2_x <- bc_scale2[-trRows, -32]
+t_bc_scale2_y <- bc_scale2[-trRows, 32]
 ```
 
 
@@ -181,9 +197,9 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 ```
 
 
-## NR results examples
+## NR results (10 means & all 30 predictors)
 ```{r}
-View(NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11)))
+# NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11)))
 # NewtonRaphson(bc_scale2_x, compute_stat, rep(10, 31))
 
 # The result of complete number of predictors is not ideal
@@ -256,9 +272,6 @@ cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
 # Compute largest lambda shrinking every beta to 0
 max_lambda1 <- max(t(bc_scale1_x) %*% bc_scale1_y)
 max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
-
-a <- cd_lasso(bc_scale1_x, y, rep(1,11), lambda = 1)
-View(a)
 ```
 
 
@@ -272,12 +285,14 @@ pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
   for (j in 1:length(lambda)) {
     cd_results <- cd_lasso(dat, y, betavec, lambda[j])
     
+    # warm start
     min_objfun_ind <- which.min(cd_results[-1, 2]) + 1
     betavec <- cd_results[min_objfun_ind, -c(1, 2)]
     objfun <- cd_results[min_objfun_ind, 2]
     
     pathwise_res <- rbind(pathwise_res, 
-                          c(j, lambda[j], objfun, betavec))
+                          c(j, lambda = lambda[j], obj = objfun, 
+                            beta = betavec))
     
   }
     
@@ -286,22 +301,11 @@ pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
 ```
 
 
-### Try...
-```{r}
-b <- pathwise_cd_lasso(bc_scale1_x, bc_scale1_y, rep(1, 11), lambda = seq(5, 0, length = 100))
-View(b)
-```
-
-
 ## 5-fold CV
 ```{r, warning = FALSE}
 cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
-  fold_index = cut(seq(1,nrow(raw_data)),breaks = kfolds, labels = FALSE)  # 1:length(data)
-  # auc_mean = vector()
-  # auc_sd = vector()
-  # auc = vector()
+  fold_index = cut(seq(1,nrow(raw_data)),breaks = kfolds, labels = FALSE)
   raw_data = raw_data[sample(nrow(raw_data)), ]
-  # fold_auc = vector()
   
   final_res <- c(fold = 0, lambda = 0, beta = betavec, auc = 0)
   
@@ -310,6 +314,8 @@ cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
     train_x = raw_data[fold_index != k, -ncol(raw_data)]
     train_y = raw_data[fold_index != k, ncol(raw_data)]
     
+    validation_y = validation[, ncol(raw_data)]
+    
     res = pathwise_cd_lasso(train_x, train_y, betavec, lambda_vec)
     
     for (i in 1:length(lambda_vec)) {
@@ -317,11 +323,16 @@ cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
       curbeta <- res[i, -c(1:3)]
       
       u <- validation[, -ncol(validation)] %*% curbeta
-      prob <- as.matrix(exp(u) / (1 + exp(u)))
+      prob <- as.matrix(exp(u) / (1 + exp(u))) # n * 1 vector
+      
+      rss <- sum((validation_y - prob)^2)
+      # g_stat <- sum((validation_y - prob)^2 / (prob * (1 - prob)))
+      
       
       final_res <- rbind(final_res, 
-                         c(fold = k, lambda = curlambda, beta = curbeta,
-                         auc = roc(as.factor(validation[, ncol(validation)]), prob)$auc[1]))
+                         c(fold = k, lambda = curlambda, beta = curbeta, 
+                           rss = rss,
+                           auc = roc(as.factor(validation[, ncol(validation)]), prob)$auc[1]))
     }
   }
   
@@ -329,13 +340,42 @@ cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
 }
 
 set.seed(2022)
-lambda_auc = cv(bc_scale1, lambda_vec = exp(seq(log(max_lambda1), 0, length = 50)), betavec = rep(3, 11))
+cv_res2 <- cv(bc_scale2, lambda_vec = exp(seq(log(max_lambda2), 0, length = 50)), betavec = rep(1, 31))
+```
+
+### 
+```{r}
+# cd_lasso using best lambda
+as.tibble(cv_res2) %>% 
+  group_by(fold) %>% 
+  arrange(desc(auc)) %>% 
+  do(head(., n = 5))
+# 
 ```
 
 
-# Lasso Solution Path
-```{r}
 
+### 
+```{r}
+# mean & sd
+as.tibble(cv_res2) %>% 
+  group_by(lambda) %>% 
+  summarise(mean_auc = mean(auc),
+            sd = sd(auc)) %>% 
+  ggplot(aes(x = log(lambda), y = mean_auc)) + 
+  geom_point() + 
+  geom_errorbar(aes(ymin = mean_auc - sd, ymax = mean_auc + sd), width = .2,
+                position = position_dodge(.05))
+```
+
+
+### Lasso Solution Path
+```{r}
+as.tibble(lambda_auc) %>% filter(fold != 0) %>% 
+  pivot_longer(4:dim(lambda_auc)[2] - 1, names_to = "beta", values_to = "value") %>% 
+  ggplot(aes(x = log(lambda), y = value, color = beta)) + 
+  geom_line(show.legend = FALSE) + scale_x_reverse(limits = c(log(max_lambda1), 0)) + 
+  facet_wrap(~ fold) + theme_minimal()
 ```
 
 
