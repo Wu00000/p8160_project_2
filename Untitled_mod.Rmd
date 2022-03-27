@@ -221,7 +221,7 @@ cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
   i <- 0
   objfun <- 0
   prev_objfun <- -Inf # ensure iterations
-  res <- c(0, loglik, betavec)
+  res <- c(0, objfun, betavec)
   
   while (i < maxier && abs(objfun - prev_objfun) > tol) {
     i <- i + 1
@@ -294,44 +294,48 @@ View(b)
 
 
 ## 5-fold CV
-```{r}
+```{r, warning = FALSE}
 cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
   fold_index = cut(seq(1,nrow(raw_data)),breaks = kfolds, labels = FALSE)  # 1:length(data)
-  auc_mean = vector()
-  auc_sd = vector()
-  auc = vector()
+  # auc_mean = vector()
+  # auc_sd = vector()
+  # auc = vector()
+  raw_data = raw_data[sample(nrow(raw_data)), ]
+  # fold_auc = vector()
   
-  #se = vector()
-  for (i in 1:length(lambda_vec)){
-    # shuffle data
-    raw_data = raw_data[sample(nrow(raw_data)), ]
-    fold_auc = vector()
-    for (j in 1:kfolds){
-      validation = raw_data[fold_index == j, ]
-      train_x = raw_data[fold_index != j, -ncol(raw_data)]
-      train_y <- raw_data[fold_index != j, ncol(raw_data)]
+  final_res <- c(fold = 0, lambda = 0, beta = betavec, auc = 0)
+  
+  for (k in 1:kfolds) {
+    validation = raw_data[fold_index == k, ]
+    train_x = raw_data[fold_index != k, -ncol(raw_data)]
+    train_y = raw_data[fold_index != k, ncol(raw_data)]
+    
+    res = pathwise_cd_lasso(train_x, train_y, betavec, lambda_vec)
+    
+    for (i in 1:length(lambda_vec)) {
+      curlambda <- res[i, 2]
+      curbeta <- res[i, -c(1:3)]
       
-      res = pathwise_cd_lasso(train_x, train_y, betavec, lambda_vec[i])
-      curbetavec = res[dim(res)[1], -c(1, 2)]
+      u <- validation[, -ncol(validation)] %*% curbeta
+      prob <- as.matrix(exp(u) / (1 + exp(u)))
       
-      u = validation[,-ncol(validation)] %*% curbetavec
-      prob = as.matrix(exp(u)/(1 + exp(u)))
-      
-      auc[j] = roc(as.factor(validation[,ncol(validation)]),prob)$auc[1]
+      final_res <- rbind(final_res, 
+                         c(fold = k, lambda = curlambda, beta = curbeta,
+                         auc = roc(as.factor(validation[, ncol(validation)]), prob)$auc[1]))
     }
-    # auc fill in
-    
-    auc_mean[i] = mean(auc)
-    auc_sd[i] = sd(auc)
-    
-    
   }
-  return(auc)
+  
+  return(final_res)
 }
 
 set.seed(2022)
-lambda_auc = cv(bc_scale2, lambda_vec = exp(seq(5, 0, length = 30)), betavec = rep(1, 31))
+lambda_auc = cv(bc_scale1, lambda_vec = exp(seq(log(max_lambda1), 0, length = 50)), betavec = rep(3, 11))
 ```
 
+
+# Lasso Solution Path
+```{r}
+
+```
 
 
