@@ -82,6 +82,40 @@ corrplot::corrplot(cor(breast_cancer[2:31]), type = "full",
                    tl.cex = .7, tl.col = "black")
 ```
 
+```{r}
+bc = read.csv("./data/breast-cancer.csv") %>% 
+  mutate(diagnosis = factor(diagnosis))
+
+#mean
+cancer_mean = bc[, 3:12] %>% as_tibble() 
+colnames(cancer_mean) = gsub("_mean", "", colnames(cancer_mean))
+featurePlot(x = cancer_mean,
+            y = cancer$diagnosis,
+            scales = list(x = list(relation = "free"),
+                          y = list(relation = "free")),
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2))
+
+#se
+cancer_se = bc[, 13:22] %>% as_tibble() 
+colnames(cancer_se) = gsub("_se", "", colnames(cancer_se))
+featurePlot(x = cancer_se,
+            y = cancer$diagnosis,
+            scales = list(x = list(relation = "free"),
+                          y = list(relation = "free")),
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2))
+
+#largest
+cancer_max = bc[, 23:32] %>% as_tibble() 
+colnames(cancer_max) = gsub("_worst", "", colnames(cancer_max))
+featurePlot(x = cancer_max,
+            y = cancer$diagnosis,
+            scales = list(x = list(relation = "free"),
+                          y = list(relation = "free")),
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2))
+```
 
 ## Modified Newton-Raphson method
 ```{r}
