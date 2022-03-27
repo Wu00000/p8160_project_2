@@ -246,7 +246,11 @@ pathwise_cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) 
 
 ### Try...
 ```{r}
-b <- pathwise_cd_lasso(bc_scale2_x, rep(1, 31), lambda = seq(5, 0, length = 100))
+# Compute largest lambda shrinking every beta to 0
+max_lamda1 <- max(t(bc_scale1_x) %*% bc_scale1_y)
+max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
+
+b <- pathwise_cd_lasso(bc_scale1_x, rep(1, 11), lambda = seq(max_lambda1, 0, length = 100))
 ```
 
 
