@@ -148,7 +148,7 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 
 ## NR results examples
 ```{r}
-# NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
+View(NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11)))
 # NewtonRaphson(bc_scale2_x, compute_stat, rep(10, 31))
 
 # The result of complete number of predictors is not ideal
@@ -184,13 +184,13 @@ y <- breast_cancer$diagnosis
 cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
   x <- dat # n * (p + 1) matrix, standardized
   i <- 0
-  loglik <- 0
-  prevloglik <- -Inf # ensure iterations
+  objfun <- 0
+  prev_objfun <- -Inf # ensure iterations
   res <- c(0, loglik, betavec)
   
-  while (i < maxier && abs(loglik - prevloglik) > tol) {
+  while (i < maxier && abs(objfun - prev_objfun) > tol) {
     i <- i + 1
-    prevloglik <- loglik
+    prev_objfun <- objfun
     
     for (j in 1:length(betavec)) {
       u <- x %*% betavec
@@ -205,10 +205,10 @@ cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
         sf(sum(w * x[, j] * (z - z_dej)), lambda) / (sum(w * x[, j]^2))
     }
     
-    loglik <- 
+    objfun <- 
       sum(w * (z - x %*% betavec)^2) / (2 * dim(x)[1]) + lambda * sum(abs(betavec))
     
-    res <- rbind(res, c(i, loglik, betavec)) 
+    res <- rbind(res, c(i, objfun, betavec)) 
   }
   
   return(res)
@@ -218,39 +218,43 @@ cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
 
 ### Try...
 ```{r}
+# Compute largest lambda shrinking every beta to 0
+max_lambda1 <- max(t(bc_scale1_x) %*% bc_scale1_y)
+max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
+
 a <- cd_lasso(bc_scale1_x, y, rep(1,11), lambda = 10)
+View(a)
 ```
 
 
 ## path-wise coordinate-wise Lasso
 ```{r}
-# --- To be modified ---
-pathwise_cd_lasso <- function(dat, betavec, lambda, maxier = 2000, tol = 1e-10) {
+pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
+  
   sort(lambda, decreasing = TRUE)
   pathwise_res <- NA
   
   for (j in 1:length(lambda)) {
-    cd_results <- cd_lasso(dat, y = breast_cancer$diagnosis, betavec, lambda[j], maxier, tol)
+    cd_results <- cd_lasso(dat, y, betavec, lambda[j])
     
-    betavec <- cd_results[dim(cd_results)[1], -c(1, 2)]
-    loglik <- cd_results[dim(cd_results)[1], 2]
+    min_objfun_ind <- which.min(cd_results[-1, 2]) + 1
+    betavec <- cd_results[min_objfun_ind, -c(1, 2)]
+    objfun <- cd_results[min_objfun_ind, 2]
+    
     pathwise_res <- rbind(pathwise_res, 
-                          c(j, lambda[j], loglik, betavec))
+                          c(j, lambda[j], objfun, betavec))
     
   }
     
-  return(pathwise_res)
+  return(pathwise_res[-1, ])
 }
 ```
 
 
 ### Try...
 ```{r}
-# Compute largest lambda shrinking every beta to 0
-max_lamda1 <- max(t(bc_scale1_x) %*% bc_scale1_y)
-max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
-
-b <- pathwise_cd_lasso(bc_scale1_x, rep(1, 11), lambda = seq(max_lambda1, 0, length = 100))
+b <- pathwise_cd_lasso(bc_scale1_x, rep(1, 11), lambda = seq(5, 0, length = 100))
+View(b)
 ```
 
 
@@ -289,8 +293,8 @@ cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
       train_x = raw_data[fold_index != j, -ncol(raw_data)]
       train_y <- raw_data[fold_index != j, ncol(raw_data)]
       
-      cd_results = cd_lasso(train_x, train_y, betavec, lambda_vec[i])
-      curbetavec = cd_results[dim(cd_results)[1], -c(1, 2)]
+      res = pathwise_cd_lasso(train_x, train_y, betavec, lambda_vec[i])
+      curbetavec = res[dim(res)[1], -c(1, 2)]
       
       u = validation[,-ncol(validation)] %*% curbetavec
       prob = as.matrix(exp(u)/(1 + exp(u)))
