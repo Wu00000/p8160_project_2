@@ -14,6 +14,7 @@ library(ggplot2)
 library(viridis)
 library(corrplot)
 library(pROC)
+library(caret)
 
 knitr::opts_chunk$set(
   warning = FALSE,
@@ -90,7 +91,7 @@ bc = read.csv("./data/breast-cancer.csv") %>%
 cancer_mean = bc[, 3:12] %>% as_tibble() 
 colnames(cancer_mean) = gsub("_mean", "", colnames(cancer_mean))
 featurePlot(x = cancer_mean,
-            y = cancer$diagnosis,
+            y = bc$diagnosis,
             scales = list(x = list(relation = "free"),
                           y = list(relation = "free")),
             plot = "density", pch = "|",
@@ -100,7 +101,7 @@ featurePlot(x = cancer_mean,
 cancer_se = bc[, 13:22] %>% as_tibble() 
 colnames(cancer_se) = gsub("_se", "", colnames(cancer_se))
 featurePlot(x = cancer_se,
-            y = cancer$diagnosis,
+            y = bc$diagnosis,
             scales = list(x = list(relation = "free"),
                           y = list(relation = "free")),
             plot = "density", pch = "|",
@@ -110,7 +111,7 @@ featurePlot(x = cancer_se,
 cancer_max = bc[, 23:32] %>% as_tibble() 
 colnames(cancer_max) = gsub("_worst", "", colnames(cancer_max))
 featurePlot(x = cancer_max,
-            y = cancer$diagnosis,
+            y = bc$diagnosis,
             scales = list(x = list(relation = "free"),
                           y = list(relation = "free")),
             plot = "density", pch = "|",
