@@ -85,6 +85,8 @@ corrplot::corrplot(cor(breast_cancer[2:31]), type = "full",
 
 ## Modified Newton-Raphson method
 ```{r}
+
+library(MASS)
 # Compute likelihood function, gradient, and Hessian matrix
 compute_stat <- function(dat, betavec){
   x <- dat # include intercept
@@ -123,8 +125,9 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
     while (func(dat, cur)$loglik < stuff$loglik) {
       # Check if all eigenvalues are negative
       # IF NOT, redirection
-      if (!all(eigen(stuff$hess)$values < 0)) {
-        gamma <- max(eigen(stuff$hess)$values)
+      eig <- eigen(stuff$hess)$value
+      if (sum(eig < 0) != length(eig)) {
+        gamma <- max(eig)
         new_hess <- stuff$hess - gamma * diag(nrow = dim(dat)[1])
         cur <- prev - solve(new_hess) %*% stuff$grad
       }
@@ -146,7 +149,7 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 ## NR results examples
 ```{r}
 # NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
-# NewtonRaphson(bc_scale1_x, compute_stat, rep(10, 11))
+# NewtonRaphson(bc_scale2_x, compute_stat, rep(10, 31))
 
 # The result of complete number of predictors is not ideal
 # due to some potential collinearity
@@ -157,6 +160,7 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 ```{r}
 # Fit a logistic model
 glm_fit <- glm(diagnosis ~., family = binomial(link = "logit"), data = breast_cancer[, 1:11])
+glm_fit$coefficients
 
 # Comparison
 NR_result <- NewtonRaphson(bc_scale1_x, compute_stat, rep(10, 11))
