@@ -257,7 +257,7 @@ cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
 max_lambda1 <- max(t(bc_scale1_x) %*% bc_scale1_y)
 max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
 
-a <- cd_lasso(bc_scale1_x, y, rep(1,11), lambda = 10)
+a <- cd_lasso(bc_scale1_x, y, rep(1,11), lambda = 1)
 View(a)
 ```
 
@@ -288,29 +288,12 @@ pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
 
 ### Try...
 ```{r}
-b <- pathwise_cd_lasso(bc_scale1_x, rep(1, 11), lambda = seq(5, 0, length = 100))
+b <- pathwise_cd_lasso(bc_scale1_x, bc_scale1_y, rep(1, 11), lambda = seq(5, 0, length = 100))
 View(b)
 ```
 
 
 ## 5-fold CV
-```{r}
-# create data partition
-n = 500
-x1 = rnorm(n, mean = 1)
-x2 = rnorm(n, mean = 1)
-eps = rnorm(n, sd = 0.5)
-y = sin(x1) + (x2)^2 + eps
-a = data.frame(y = y, x1  = x1)
-#cbind(a, x2)
-indexTrain = sample(nrow(a), 400, replace = F)
-a[indexTrain, ]
-a[-indexTrain, ]
-#cut(seq_along(a), n = 5, lables = F)
-fold = cut(seq(1,nrow(a)),breaks = 5,labels = FALSE)
-which(fold == 3, arr.ind = T)
-```
-
 ```{r}
 cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
   fold_index = cut(seq(1,nrow(raw_data)),breaks = kfolds, labels = FALSE)  # 1:length(data)
