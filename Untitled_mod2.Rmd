@@ -133,7 +133,6 @@ featurePlot(x = cancer_max,
 
 ## Modified Newton-Raphson method
 ```{r}
-
 library(MASS)
 # Compute likelihood function, gradient, and Hessian matrix
 compute_stat <- function(dat, betavec){
@@ -187,9 +186,6 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
     }
     stuff <- func(dat, cur)
     
-    # break if NA
-    if (is.na(stuff$loglik)) {break}
-    
     res <- rbind(res, c(i, stuff$loglik, cur))
   }
   return(res)
@@ -200,7 +196,7 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 ## NR results (both 10 means & all 30 predictors)
 ```{r}
 # NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
-# NewtonRaphson(bc_scale2_x, compute_stat, rep(10, 31))
+# NewtonRaphson(bc_scale2_x, compute_stat, rep(1, 31))
 
 # The result of using 30 of predictors is not ideal
 # due to some potential collinearity
