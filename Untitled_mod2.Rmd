@@ -95,7 +95,7 @@ t_bc_scale2_y <- bc_scale2[-trRows, 32]
 corrplot::corrplot(cor(breast_cancer[2:31]), type = "full",
                    tl.cex = .7, tl.col = "black")
 
-# --- Fea
+# --- Features plots ---
 bc = read.csv("./data/breast-cancer.csv") %>% 
   mutate(diagnosis = factor(diagnosis))
 
