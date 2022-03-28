@@ -294,6 +294,18 @@ pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
 }
 ```
 
+```{r}
+pathwise = pathwise_cd_lasso(bc_scale2_x, bc_scale2_y, rep(1,31), exp(seq(log(max_lambda2), 0, length = 30)))
+tidy.path = as.tibble(pathwise)[,-c(1,3)] %>% 
+  pivot_longer(2:32, names_to = "beta", values_to = "value") %>% 
+  mutate(loglambda = log(lambda))
+  
+
+ggplot(data = tidy.path, aes(x = loglambda, y = value, color = beta, group = beta)) +
+  geom_line()
+```
+
+
 
 ## 5-fold CV using cd_lasso
 ```{r, warning = FALSE}
