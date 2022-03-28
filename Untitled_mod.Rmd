@@ -1,17 +1,12 @@
 ---
-title: "Untitled"
-output: pdf_document
----
-
----
 title: "Breast Cancer Diagnosis"
 output: pdf_document
+date: "Mar 20, 2022"
 ---
 
 ```{r setup, echo = FALSE, warnings = FALSE, message=FALSE}
 library(tidyverse)
 library(ggplot2)
-library(viridis)
 library(corrplot)
 library(pROC)
 library(caret)
@@ -38,8 +33,9 @@ scale_fill_discrete = scale_fill_viridis_d
 # --- Import data ---
 breast_cancer = 
   read_csv("./data/breast-cancer.csv") %>% 
-  select(-c(1, 33)) %>% 
+  dplyr::select(-c(1, 33)) %>% 
   janitor::clean_names() %>% 
+  # add extra row
   add_row(diagnosis = 'B', radius_mean = 7.76, texture_mean = 24.54,
           perimeter_mean = 47.92, area_mean = 181, smoothness_mean = 0.05263,
           compactness_mean = 0.04362, concavity_mean = 0, 
@@ -57,12 +53,12 @@ breast_cancer =
            as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0))) - 1) %>% 
   mutate_each_(funs(scale(.)), c(2:31))
 
-# --- Data partition ---
-# Newton-Raphson Algorithm
+
+# --- Data partition (8:2) ---
 set.seed(2022)
 trRows <- createDataPartition(breast_cancer$diagnosis, p = 0.8, list = FALSE)
 
-# mean predictors
+# --- `mean` predictors for Newton-Raphson method ---
 pred_1 <- as.tibble(breast_cancer[2:11])
 bc_scale1 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
                              pred_1, outcome = breast_cancer$diagnosis))
@@ -76,7 +72,7 @@ bc_scale1_y <- bc_scale1[, 12]
 t_bc_scale1_x <- bc_scale1[-trRows, -12]
 t_bc_scale1_y <- bc_scale1[-trRows, 12]
 
-# All predictors
+# --- All predictors for lasso & CV ---
 pred_2 <- as.tibble(breast_cancer[2:31])
 bc_scale2 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
                              pred_2, outcome = breast_cancer$diagnosis))
@@ -92,14 +88,13 @@ t_bc_scale2_y <- bc_scale2[-trRows, 32]
 ```
 
 
-## Add EDA
+## Exploratory Data Analysis
 ```{r}
-# Correlation plot
+# --- Correlation plot ---
 corrplot::corrplot(cor(breast_cancer[2:31]), type = "full",
                    tl.cex = .7, tl.col = "black")
-```
 
-```{r}
+# --- Fea
 bc = read.csv("./data/breast-cancer.csv") %>% 
   mutate(diagnosis = factor(diagnosis))
 
@@ -197,12 +192,12 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 ```
 
 
-## NR results (10 means & all 30 predictors)
+## NR results (both 10 means & all 30 predictors)
 ```{r}
 # NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11)))
 # NewtonRaphson(bc_scale2_x, compute_stat, rep(10, 31))
 
-# The result of complete number of predictors is not ideal
+# The result of using 30 of predictors is not ideal
 # due to some potential collinearity
 ```
 
@@ -267,16 +262,15 @@ cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
 ```
 
 
-### Try...
+### Try cd_lasso...
 ```{r}
-# Compute largest lambda shrinking every beta to 0
-max_lambda1 <- max(t(bc_scale1_x) %*% bc_scale1_y)
-max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
+# cd_lasso(bc_scale2_x, bc_scale2_y, betavec = rep(1, 31), lambda = 2)
 ```
 
 
-## path-wise coordinate-wise Lasso
+## path-wise coordinate-wise for lasso solution path
 ```{r}
+# pathwise based on cd_lasso
 pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
   
   sort(lambda, decreasing = TRUE)
@@ -301,61 +295,102 @@ pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
 ```
 
 
-## 5-fold CV
+## 5-fold CV using cd_lasso
 ```{r, warning = FALSE}
 cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
+  
   fold_index = cut(seq(1,nrow(raw_data)),breaks = kfolds, labels = FALSE)
   raw_data = raw_data[sample(nrow(raw_data)), ]
+
+  final_res <- c(lambda = 0, auc = 0, rss = 0, gstat = 0)
   
-  final_res <- c(fold = 0, lambda = 0, beta = betavec, auc = 0)
-  
-  for (k in 1:kfolds) {
-    validation = raw_data[fold_index == k, ]
-    train_x = raw_data[fold_index != k, -ncol(raw_data)]
-    train_y = raw_data[fold_index != k, ncol(raw_data)]
+  for (i in 1:length(lambda_vec)) {
+    curlambda = lambda_vec[i]
+    fold_auc = list(); fold_rss = list(); fold_gstat = list()
     
-    validation_y = validation[, ncol(raw_data)]
-    
-    res = pathwise_cd_lasso(train_x, train_y, betavec, lambda_vec)
-    
-    for (i in 1:length(lambda_vec)) {
-      curlambda <- res[i, 2]
-      curbeta <- res[i, -c(1:3)]
+    for (k in 1:kfolds) {
+      train = raw_data[fold_index != k, ]
+      validation = raw_data[fold_index == k, ]
       
-      u <- validation[, -ncol(validation)] %*% curbeta
-      prob <- as.matrix(exp(u) / (1 + exp(u))) # n * 1 vector
+      train_x = train[, -ncol(raw_data)]
+      train_y = train[, ncol(raw_data)]
+      validation_x = validation[, -ncol(raw_data)]
+      validation_y = validation[, ncol(raw_data)]
       
-      rss <- sum((validation_y - prob)^2)
-      # g_stat <- sum((validation_y - prob)^2 / (prob * (1 - prob)))
+      # cd_lasso
+      res = cd_lasso(train_x, train_y, betavec, curlambda)
       
+      curbeta = res[dim(res)[1], 3:dim(res)[2]]
+      u = validation_x %*% as.matrix(curbeta) # u: n * 1 vector
+      prob = exp(u) / (1 + exp(u))
       
-      final_res <- rbind(final_res, 
-                         c(fold = k, lambda = curlambda, beta = curbeta, 
-                           rss = rss,
-                           auc = roc(as.factor(validation[, ncol(validation)]), prob)$auc[1]))
+      fold_auc[k] = roc(as.factor(validation_y), prob)$auc[1]
+      fold_rss[k] = sum((validation_y - prob)^2)
+      fold_gstat[k] = sum((validation_y - prob)^2 / (prob * (1 - prob)))
     }
+    
+    final_res = rbind(final_res, c(lambda = curlambda, mean_auc = mean(fold_auc),
+                                   sd_auc = sd(fold_auc), rss = mean(fold_rss),
+                                    gstat = mean(fold_gstat)))
   }
   
   return(final_res)
 }
 
 set.seed(2022)
-cv_res2 <- cv(bc_scale2, lambda_vec = exp(seq(log(max_lambda2), 0, length = 50)), betavec = rep(1, 31))
+cv_res2 <- cv(bc_scale2, lambda_vec = exp(seq(log(max_lambda2), 0, length = 30)), betavec = rep(1, 31))
+
+        # for (k in 1:kfolds) {
+        #   validation = raw_data[fold_index == k, ]
+        #   train_x = raw_data[fold_index != k, -ncol(raw_data)]
+        #   train_y = raw_data[fold_index != k, ncol(raw_data)]
+        #   
+        #   validation_y = validation[, ncol(raw_data)]
+        #   
+        #   res = pathwise_cd_lasso(train_x, train_y, betavec, lambda_vec)
+        #   
+        #   for (i in 1:length(lambda_vec)) {
+        #     curlambda <- res[i, 2]
+        #     curbeta <- res[i, -c(1:3)]
+        #     
+        #     u <- validation[, -ncol(validation)] %*% curbeta
+        #     prob <- as.matrix(exp(u) / (1 + exp(u))) # n * 1 vector
+        #     
+        #     rss <- sum((validation_y - prob)^2)
+        #     # g_stat <- sum((validation_y - prob)^2 / (prob * (1 - prob)))
+        #     
+        #     
+        #     final_res <- rbind(final_res, 
+        #                        c(fold = k, lambda = curlambda, beta = curbeta, 
+        #                          rss = rss,
+        #                          auc = roc(as.factor(validation[, ncol(validation)]), prob)$auc[1]))
+        #   }
+        # }
+        # 
+        # return(final_res)
 ```
 
-### 
+### Compare optimal with full using test data
 ```{r}
-# cd_lasso using best lambda
-as.tibble(cv_res2) %>% 
-  group_by(fold) %>% 
-  arrange(desc(auc)) %>% 
-  do(head(., n = 5))
-# 
+opt_lambda = 
+
+# Optimal lambda
+optimal = cd_lasso(t_bc_scale2_x, t_bc_scale2_y, lambda = opt_lambda, betavec = rep(0.5,31))[,-c(1:2)] %>% 
+  as.matrix() 
+u_opt <- t_bc_scale2_x %*% optimal[nrow(optimal),]
+prob_opt <- as.matrix(exp(u_opt) / (1 + exp(u_opt)))
+roc(as.factor(t_bc_scale2_y), prob_opt)$auc[1]
+
+# Without lambda
+full = cd_lasso(t_bc_scale2_x, t_bc_scale2_y, lambda = 0, betavec = rep(0.5,31))[,-c(1:2)] %>% 
+  as.matrix()
+u_full <- t_bc_scale2_x %*% full[nrow(full),]
+prob_full <- as.matrix(exp(u_full) / (1 + exp(u_full)))
+roc(as.factor(t_bc_scale2_y), prob_full)$auc[1]
 ```
 
 
-
-### 
+### 5-fold cv mean auc & sd auc
 ```{r}
 # mean & sd
 as.tibble(cv_res2) %>% 
@@ -371,11 +406,16 @@ as.tibble(cv_res2) %>%
 
 ### Lasso Solution Path
 ```{r}
-as.tibble(lambda_auc) %>% filter(fold != 0) %>% 
-  pivot_longer(4:dim(lambda_auc)[2] - 1, names_to = "beta", values_to = "value") %>% 
+# Computate maximum lambda shrinking every beta to 0
+max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
+
+# pathwise cd_lasso
+res <- pathwise_cd_lasso(bc_scale1_x, bc_scale1_y, rep(1, 31), exp(seq(max_lambda2, 0, length = 50)))
+
+as.tibble(res) %>%  
+  pivot_longer(4:dim(res)[2] - 1, names_to = "beta", values_to = "value") %>% 
   ggplot(aes(x = log(lambda), y = value, color = beta)) + 
-  geom_line(show.legend = FALSE) + scale_x_reverse(limits = c(log(max_lambda1), 0)) + 
-  facet_wrap(~ fold) + theme_minimal()
+  geom_line(show.legend = FALSE) + scale_x_reverse(limits = c(log(max_lambda2), 0))
 ```
 
 
