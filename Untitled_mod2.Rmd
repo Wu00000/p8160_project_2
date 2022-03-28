@@ -130,6 +130,7 @@ featurePlot(x = cancer_max,
             auto.key = list(columns = 2))
 ```
 
+
 ## Modified Newton-Raphson method
 ```{r}
 
@@ -275,24 +276,26 @@ a <- cd_lasso(bc_scale2_x, bc_scale2_y, betavec = rep(1, 31), lambda = 1)
 ## path-wise coordinate-wise for lasso solution path
 ```{r}
 # pathwise based on cd_lasso
-pathwise_cd_lasso <- function(dat, y, lambda) {
-
-  pathwise_res <- NULL
-  betavec <- rep(1, 31)
+pathwise_cd_lasso <- function(dat, y, betavec, lambda) {
+  
+  sort(lambda, decreasing = TRUE)
+  pathwise_res <- NA
   
   for (j in 1:length(lambda)) {
     cd_results <- cd_lasso(dat, y, betavec, lambda[j])
     
     # warm start
-    betavec <- cd_results[nrow(cd_results), -c(1, 2)]
+    min_objfun_ind <- which.min(cd_results[-1, 2]) + 1
+    betavec <- cd_results[min_objfun_ind, -c(1, 2)]
+    objfun <- cd_results[min_objfun_ind, 2]
     
     pathwise_res <- rbind(pathwise_res, 
-                          c(lambda = lambda[j], 
+                          c(j, lambda = lambda[j], obj = objfun, 
                             beta = betavec))
     
   }
     
-  return(pathwise_res)
+  return(pathwise_res[-1, ])
 }
 ```
 
@@ -374,19 +377,19 @@ as.tibble(cv_res[-1, ]) %>%
 ```
 
 
-### Lasso Solution Path
+### Lasso solution path
 ```{r}
 # Computate maximum lambda shrinking every beta to 0
 max_lambda2 <- max(t(bc_scale2_x) %*% bc_scale2_y)
 
 # pathwise cd_lasso
-res <- pathwise_cd_lasso(bc_scale2_x, bc_scale2_y, seq(5, -3, length = 10))
-
-as.tibble(res) %>% dplyr::select(-c(1,3)) %>%
-  pivot_longer(4:dim(res)[2] - 2, names_to = "beta", values_to = "value") %>% 
-  ggplot(aes(x = log(lambda), y = value, color = beta)) + 
-  geom_line(show.legend = FALSE) + scale_x_reverse(limits = c(5, -3)) +
-  ylim(c(-20, 20))
+pathwise = pathwise_cd_lasso(bc_scale2_x, bc_scale2_y, rep(1,31), exp(seq(log(max_lambda2), 0, length = 30)))
+tidy.path = as.tibble(pathwise)[,-c(1,3)] %>% 
+  pivot_longer(2:32, names_to = "beta", values_to = "value") %>% 
+  mutate(loglambda = log(lambda))
+  
+ggplot(data = tidy.path, aes(x = loglambda, y = value, color = beta, group = beta)) +
+  geom_line()
 ```
 
 
