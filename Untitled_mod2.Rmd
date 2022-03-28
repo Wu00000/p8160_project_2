@@ -138,7 +138,7 @@ library(MASS)
 # Compute likelihood function, gradient, and Hessian matrix
 compute_stat <- function(dat, betavec){
   x <- dat # include intercept
-  y <- breast_cancer$diagnosis
+  y <- bc_scale1_y
   u <- x %*% betavec # n * 1 vector
   pi <- exp(u) / (1 + exp(u))
   # Log-likelihood
@@ -199,7 +199,7 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 
 ## NR results (both 10 means & all 30 predictors)
 ```{r}
-# NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11)))
+# NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
 # NewtonRaphson(bc_scale2_x, compute_stat, rep(10, 31))
 
 # The result of using 30 of predictors is not ideal
