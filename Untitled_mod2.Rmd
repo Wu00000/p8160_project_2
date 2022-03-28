@@ -188,7 +188,7 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
     stuff <- func(dat, cur)
     
     # break if NA
-    if (is.na(tuff$loglik)) {break}
+    if (is.na(stuff$loglik)) {break}
     
     res <- rbind(res, c(i, stuff$loglik, cur))
   }
@@ -269,7 +269,7 @@ cd_lasso <- function(dat, y, betavec, lambda, maxier = 2000, tol = 1e-10) {
 
 ### Try cd_lasso...
 ```{r}
-a <- cd_lasso(bc_scale2_x, bc_scale2_y, betavec = rep(1, 31), lambda = 1)
+# cd_lasso(bc_scale2_x, bc_scale2_y, betavec = rep(1, 31), lambda = 1)
 ```
 
 
