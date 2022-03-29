@@ -1,0 +1,73 @@
+---
+title: "P8160 Group Project 2: Breast Cancer Diagnosis and Optimizations"
+author: "Wenhan Bao | Tianchuan Gao | Jialiang Hua  | Qihang Wu | Paula Wu"
+date: "3/25/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Objective
+
+
+
+# Background & Statistical Methods
+## Background
+
+
+## Statistical Methods
+### Modified Newton-Raphson Algorithm
+
+
+### Logistic-LASSO
+#### Coordinate-wise Descent Algorithm
+
+
+#### Pathwise Coordinate-wise Algorithm
+
+
+
+#### 5-fold Cross-validation
+
+
+
+# Conclusions
+## Logistic Regression Model
+
+
+## Logistic-LASSO Model
+
+
+
+
+
+# Discussion
+
+
+# Contributions
+We contributed to this project evenly.
+
+
+
+# Appendix
+
+
+# Reference
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
