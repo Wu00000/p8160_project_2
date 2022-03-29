@@ -1,0 +1,80 @@
+---
+title: "P8160 Group Project 2: Breast Cancer Diagnosis and Optimizations"
+author: "Wenhan Bao | Tianchuan Gao | Jialiang Hua  | Qihang Wu | Paula Wu"
+date: "3/25/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Objective
+
+
+
+# Background & Statistical Methods
+## Background
+
+
+## Statistical Methods
+### Modified Newton-Raphson Algorithm
+
+
+### Logistic-LASSO
+***Least Absolute Shrinkage and Selection Operator (LASSO)*** To estimate coefficients through Newton-Raphson method, it is necessary to compute the corresponding inverse of Hessian Matrix $[\nabla^2f(\theta_{i-1})]^{-1}$. However, the computational burden of calculation will increase as the dimension of predictors increases and the collinearity will also be a problem. Therefore, we use a regularization method, LASSO, to shrink coefficients and perform variable selections. For regression lasso, the objective function is: 
+$$f(\beta) = \frac{1}{2}\sum_{i=1}^{n}(y_i - \sum_{j=1}^{p}x_{i,j}\beta_j)^2 + \lambda\sum_{i=1}^{p}|\beta_j|,$$ where the first term is residual sum of squares (RSS) and the second term is the lasso l1 penalty. Noted that the $x_{i,j}$ needs to be standardized before LASSO so that the penalty will be equally applied to all predictors. For each single predictor, the LASSO solution is like: 
+$$\hat\beta^{lasso}(\lambda) = S(\hat\beta, \lambda) = \begin{cases} \hat\beta - \lambda, \text{ if } \hat\beta > 0 \text{ and } \lambda < |\hat\beta| \\ \hat\beta + \lambda, \text{ if } \hat\beta < 0 \text{ and } \lambda < |\hat\beta| \\ 0, \text{ if } \lambda > |\hat\beta|, \end{cases}$$ where $S(\hat\beta, \lambda)$ is called soft threshold. The basic idea of this function is to shrink all $\beta$ coefficients between $-\lambda$ and $\lambda$.  
+
+***Coordinate-wise Descent Algorithm*** Another approach to solve the complex computation of inverse Hessian Matrix is coordinate descent approach, which starts with an initial guess of parameters $\theta$, optimize one parameter at one time based on the best knowledge of other parameters, and use the results as the start values for the next iteration. We then repeat the above steps until convergence. Finally, this approach tries to minimize the following objective function when considering a lasso penalty: 
+$$f(\beta_j) = \frac{1}{2}\sum_{i=1}^{n}(y_i - \sum_{k\neq j}x_{i,j}\tilde\beta_k - x_{i,j}\beta_j)^2 + \lambda\sum_{k\neq j}|\tilde\beta_k| + \lambda|\beta_j|,$$ where $\tilde\beta$ represents the current estimates of $\beta$ and therefore constants. If we also consider a weight $\omega_i$ is associated with each observation, then the updated $\beta_j$ in this case is: $$\tilde\beta_j(\lambda) \leftarrow \frac{S(\sum_{i}\omega_ix_{i,j}(y_i - \tilde y_{i}^{(-j)}), \lambda)}{\sum_{i}\omega_ix_{i,j}^2}, $$ where $\tilde y_i^{(-j)} = \sum_{k\neq j}x_{i}\tilde\beta_k$. From here, we use the Taylor expansion. So the log-likelihood around "current estimate" is: 
+$$l(\beta) = -\frac{1}{2n}\sum_{i=1}^{n}\omega_i(z_i - X_i\beta)^2, $$ where working weights $\omega_i = \tilde\pi_i(1 - \tilde\pi_i)$, working response $z_i = X_i\tilde\beta + \frac{y_i - \tilde\pi_i}{\tilde\pi_i(1 - \tilde\pi_i)}$, and $\tilde\pi_i = \frac{exp(X_i\tilde\beta)}{1 + exp(X_i\tilde\beta)}$.  
+Finally, similar to regression lasso, the logistic lasso can be written as a penalized weighted least-squares problem like this: 
+$$min_{\beta}L(\beta) = {-l(\beta) + \lambda\sum_{j=0}^{p}|\beta_j|}$$.
+
+***Pathwise Coordinate-wise Algorithm***
+
+
+
+### 5-fold Cross-validation
+
+
+
+# Conclusions
+## Logistic Regression Model
+
+
+## Logistic-LASSO Model
+
+
+
+
+
+# Discussion
+
+
+# Contributions
+We contributed to this project evenly.
+
+
+
+# Appendix
+
+
+# Reference
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
