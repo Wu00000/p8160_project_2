@@ -5,8 +5,11 @@ date: "3/25/2022"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(corrplot)
 ```
 
 
@@ -14,11 +17,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-# Background & Statistical Methods
+# Background & Methods
 ## Background
 
 
-## Statistical Methods
+## Methods
+### Exploratory Data Analysis (EDA)
+
 ### Modified Newton-Raphson Algorithm
 
 
