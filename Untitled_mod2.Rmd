@@ -338,6 +338,7 @@ cv = function(raw_data, lambda_vec, kfolds = 5, betavec){
 
 set.seed(2022)
 cv_res <- cv(bc_scale2, lambda_vec = seq(3, 0, length = 150), betavec = rep(1, 31))
+# write_csv(as.tibble(cv_res), file = "cv_results.csv")
 ```
 
 
