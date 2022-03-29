@@ -38,9 +38,15 @@ $$l(\beta) = -\frac{1}{2n}\sum_{i=1}^{n}\omega_i(z_i - X_i\beta)^2, $$ where wor
 Finally, similar to regression lasso, the logistic lasso can be written as a penalized weighted least-squares problem like this: 
 $$min_{\beta}L(\beta) = {-l(\beta) + \lambda\sum_{j=0}^{p}|\beta_j|}$$.
 
-***Pathwise Coordinate-wise Algorithm***
+***Pathwise Coordinate-wise Algorithm*** The difference between pathwise coordinate-wise method and coordinate-wise method is that a sequence value of lambda is required to input. There are some steps taken as followed:
 
++ Select a $\lambda_{max}$ for all the estimate $\beta$ = 0 which is the inner product ($max_l\left \langle X_l,y \right \rangle$).
 
++ Compute the solution with a sequence of descending $\lambda$ from maximum to zero ($\lambda_{max} > \lambda_{k} > \lambda_{k-1}...>0$).
+
++ Initialize coordinate descent algorithms for $\lambda_k$ by the calculated estimate $\beta$ from previous $\lambda_{k+1}$ as a warm start
+
++ By repeating the two steps above, a sequence of optimal coefficients $\beta$ for each descending $\lambda$. When objective function is taken the minimum value ($min_{\beta}L(\beta)$), the best $\lambda$ could be identified and optimal coefficients $\beta$ could be selected under this best $\lambda$
 
 ### 5-fold Cross-validation
 
