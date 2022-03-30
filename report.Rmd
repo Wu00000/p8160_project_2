@@ -14,12 +14,30 @@ library(corrplot)
 
 
 # Objective
-The main objective of our project is to build an accurate predictive model based on logistic regression that classifies between malignant and benign images of breast tissue. Using the Breast Cancer Diagnosis dataset, we will implement logistic model and logistic-LASSO model to predict the diagnosis. A Newton-Raphson algorithm and Pathwise Coordinate optimization will be developed to estimate the logistic model and the lasso model respectively. Our aim is to find the model with the best performance in predicting the diagnosis of breast tissue image. 
+The main objective of our project is to build an accurate predictive model based on logistic regression that classifies  malignant and benign images of breast tissue. Using the Breast Cancer Diagnosis dataset, we will implement logistic model and logistic-LASSO model to predict the diagnosis. A Newton-Raphson algorithm and Pathwise Coordinate optimization will be developed to estimate the logistic model and the lasso model respectively. 5-fold cross-validation will be applied to find the optimal value for the tuning parameter. Our aim is to find the model with the best performance in predicting the diagnosis of breast tissue images. 
 
 
 # Background & Methods
 ## Background
-Breast cancer, which affects 1 in 7 women worldwide, is the most common invasive cancer in women around the world. It can start from different parts of the breast and is marked by the uncontrolled growth of breast cells. Benign breast tumors do not metastasize and are usually not life-threatening, while malignant tumors are aggressive and deadly. Nowadays, substantial support for breast cancer awareness and research funding has created great advances in the diagnosis and treatment of breast cancer. The prognosis of the disease has been greatly improved once it is detected and treated early. Therefore, it's important to have breast lumps accurately diagnosed so that timely clinical intervention can be conducted. 
+Breast cancer, which affects 1 in 7 women worldwide, is the most common invasive cancer in women around the world. It can start from different parts of the breast and is marked by the uncontrolled growth of breast cells. Benign breast tumors do not metastasize and are usually not life-threatening, while malignant tumors are aggressive and deadly. Nowadays, substantial support for breast cancer awareness and research funding has created great advances in the diagnosis and treatment of breast cancer. The prognosis of the disease has been greatly improved once it is detected and treated early. Therefore, it's important to have breast lumps accurately diagnosed so that timely clinical intervention can be conducted.
+
+The dataset we uses contains 569 observations and 33 columns, including 357 benign and 212 malignant cases. 30 out of the 33 columns are predictors that contain the mean, standard deviation and the largest value of the distributions of 10 distinct features listed below:
+
+\begin{itemize}
+\item radius (mean of distances from center to points on the perimeter)
+\item texture (standard deviation of gray-scale values)
+\item perimeter
+\item area
+\item smoothness (local variation in radius lengths)
+\item compactness (perimeter\^ 2 / area - 1.0)
+\item concavity (severity of concave portions of the contour)
+\item concave points (number of concave portions of the contour)
+\item symmetry
+\item fractal dimension ("coastline approximation" - 1)
+\end{itemize}
+
+Our goal is to build a predictive model based on logistic regression to facilitate cancer diagnosis. 
+
 
 
 ## Methods
@@ -59,7 +77,7 @@ In our implementation, we initially choose 30 equally spaced $\lambda$ from $e^{
 
 ### Comparsion: "Optimal" model vs. "Full" model 
 
-As the name suggested, the "optimal" model has the optimal $\lambda$ as its tuning parameter while the "full" model has $\lambda = 0$. We evaluate both models and obtain their AUC scores: optimal model has an AUC of 0.9994 and the full model has an AUC of 1. Thus, we concluded that the full model has a better prediction, even though the prediction performance of these two models only differ by 0.0006. 
+As the name suggested, the "optimal" model has $\lambda = 1.5705$ as its tuning parameter while the "full" model has $\lambda = 0$. We evaluate both models and obtain their AUC scores: optimal model has an AUC of 0.9994 and the full model has an AUC of 1. Thus, we concluded that the full model has a better prediction, even though the prediction performance of these two models only differ by 0.0006. 
 
 # Conclusions
 ## Logistic Regression Model
