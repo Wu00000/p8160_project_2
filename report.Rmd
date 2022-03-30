@@ -52,6 +52,12 @@ $$min_{\beta}L(\beta) = {-l(\beta) + \lambda\sum_{j=0}^{p}|\beta_j|}$$.
 
 In a nutshell, a 5-fold cross-validation first splits the shuffled training data (80% of the whole dataset) into 5 parts and takes one group as the hold-out set (validation set) while fitting the model using the remaining 4 training sets. After a model is fitted, we evaluate and retain the model performance, namely AUC and RSS, and move on to the next iteration. After 5 iterations, we calculated the mean RSS and the mean AUC with standard deviations. Our goal is to find an optimal $\lambda$ that maximizes the mean AUC. 
 
+In our implementation, we initially choose 30 equally spaced $\lambda$ from $e^{(-4,3)}$. The reason why the $\lambda$'s are widespread is that we would like to determine the rough range, instead of the precise value, of the optimum of this tuning parameter first. For each $\lambda$, we ran the 5-fold cross-validation. Within each fold, we use Coordinate-wise optimization to update the coefficients vectors $\boldsymbol{\beta}$ and evaluate the performance by calculating AUC and RSS. Among 30 $\lambda$, the optimal $\lambda$ that maximizes the AUC equals 2.3681. We then narrow down the range to (3, 0) and choose 150 equally spaced $\lambda$ in between. The best $\lambda$ selected by cross-validation equals 1.5705. 
+
+
+### Comparsion: "Optimal" model vs. "Full" model 
+
+As the name suggested, the "optimal" model has the optimal $\lambda$ as its tuning parameter while the "full" model has $\lambda = 0$. We evaluate both models and obtain their AUC scores: optimal model has an AUC of 0.9994 and the full model has an AUC of 1. Thus, we concluded that the full model has a better prediction, even though the prediction performance of these two models only differ by 0.0006. 
 
 # Conclusions
 ## Logistic Regression Model
@@ -64,6 +70,8 @@ In a nutshell, a 5-fold cross-validation first splits the shuffled training data
 
 
 # Discussion
+ 
+It's quite interesting that the full model has a perfect classification result. One plausible reason could be that the data is well separated for benign and malignant breast cancer. 
 
 
 # Contributions
