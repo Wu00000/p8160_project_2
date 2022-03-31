@@ -11,6 +11,9 @@ library(corrplot)
 library(pROC)
 library(caret)
 library(patchwork)
+library(gridExtra)
+library(magrittr)
+library(kableExtra)
 
 knitr::opts_chunk$set(
   warning = FALSE,
@@ -195,8 +198,28 @@ NewtonRaphson <- function(dat, func, start, tol = 1e-15, maxier = 200) {
 
 ## NR results (both 10 means & all 30 predictors)
 ```{r}
-# NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
-# NewtonRaphson(bc_scale2_x, compute_stat, rep(1, 31))
+name1 = colnames(bc_scale1_x)
+NR_result1=NewtonRaphson(bc_scale1_x, compute_stat, rep(1, 11))
+NR_result1 =as.tibble(NR_result1) %>%
+  dplyr::select(3:13)%>%
+  tail(n=1)
+colnames(NR_result1) = name1
+NR_result1 = NR_result1%>%
+  pivot_longer(1:11,
+    names_to = " ",
+    values_to = "Coefficient"
+  )
+NR_result2=NewtonRaphson(bc_scale2_x, compute_stat, rep(1, 31))
+name2 = colnames(bc_scale2_x)
+NR_result2 =as.tibble(NR_result2) %>%
+  dplyr::select(3:33)%>%
+  tail(n=1)
+colnames(NR_result2) = name2
+NR_result2 = NR_result2%>%
+  pivot_longer(1:31,
+    names_to = " ",
+    values_to = "Coefficient"
+  )
 
 # The result of using 30 of predictors is not ideal
 # due to some potential collinearity
