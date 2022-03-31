@@ -79,11 +79,13 @@ $$
 ***Model Explanation***  
 With those parameters above, we can apply the Newton-Raphson algorithm to calculate $\beta$ with the following equation in each iteration:
 $$
-\boldsymbol{\beta}_{\boldsymbol{i}+\mathbf{1}}=\boldsymbol{\beta}_{\boldsymbol{i}}-\left[\nabla^{2} l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)\right]^{-1} \nabla l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)
-$$
+\boldsymbol{\beta}_{\boldsymbol{i}+\mathbf{1}}=\boldsymbol{\beta}_{\boldsymbol{i}}-\left[\nabla^{2} l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)\right]^{-1} \nabla l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)$$
 We also apply two modifications: step-halving and re-direction. Both modification are meant to ensure the likelihood is increasing the the ascent direction at each iteration.  
+
 ***Results***
+
 We apply the modified Newton-Raphson algorithm on the first ten features(mean) and get the following result:
+
 ```{r}
 knitr::include_graphics("./NR_result1.png")
 ```
@@ -121,19 +123,26 @@ In our implementation, we initially choose 30 equally spaced $\lambda$ from $e^{
 
 As the name suggested, the "optimal" model has $\lambda = 1.5705$ as its tuning parameter while the "full" model has $\lambda = 0$. We evaluate both models and obtain their AUC scores: optimal model has an AUC of 0.9994 and the full model has an AUC of 1. Thus, we concluded that the full model has a better prediction, even though the prediction performance of these two models only differ by 0.0006. 
 
-# Conclusions
-## Logistic Regression Model
+# Results
+## Newton-Raphson Methods
 
 
-## Logistic-LASSO Model
+## Pathwise Logistic-LASSO Model
+
+In the part of Pathwise logistic-lasso model, we firstly select the maximum $\lambda$ which is the inner product of response and all variables and $\lambda_{max}$ = 218.13. By using a sequence of $\lambda$ to minimize the objective function and have a relatively higher AUC, the minimum value would be taken under when $\lambda$ = 1.57 which means the optimal solution will be computed for this optimal $\lambda$ value.
+
+```{r echo=FALSE}
+read.csv("compare_beta.csv") %>% 
+  knitr::kable(caption = "Comparing the coefficients for optimal and full model")
+```
+
+In the above table, we directly compare the coefficients estimates $\beta$ for all 30 variables and $\beta_0$ for intercept (V1-V31 represent the $\beta$). In the optimal lasso model, there are only ten variables included while the rest predictors are all shrinked towards zero.  
 
 
 
-
-
-# Discussion
+# Conclusion and Discussion
  
-It's quite interesting that the full model has a perfect classification result. One plausible reason could be that the data is well separated for benign and malignant breast cancer. 
+It's quite interesting that the full model has a perfect classification result. One plausible reason could be that the data is well separated for benign and malignant breast cancer.
 
 
 # Contributions
