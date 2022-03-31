@@ -45,6 +45,48 @@ Our goal is to build a predictive model based on logistic regression to facilita
 Firstly, we imported and cleaned the data and conducted exploratory data analysis. We plotted the correlation plot of all the predictors by R. From the plot, we can find that there is a high correlation between many of the predictors. This is because our predictors include mean, standard deviation and the largest values of the distributions of 10 features, which means that some predictors can be calculated by other predictors. Then, we made the feature plots to explore the relationship between binary diagnosis outcome and all our predictors to determine the potential effective predictors.
 
 ### Modified Newton-Raphson Algorithm
+***Model Parameters***  
+The logistic model can be defined as:
+$$log(\frac{\pi_i}{1-\pi_i}) = \bf{X}\boldsymbol{\beta}$$
+$\pi_i$ stands for the probability that the tissue is malignant in the $i_{th}$ observation and it can be written as:
+$$\pi_i = \frac{e^{\bf{X}\boldsymbol{\beta}}}{1 + e^{\bf{X}\boldsymbol{\beta}}}$$  
+The likelihood function for vector $\beta$ is: 
+$$L(\beta) = \prod_{i = 0}^{n}(\frac{e^{\bf{X}\beta}}{1 + e^{\bf{X}\beta}})^{y_i}(\frac{1}{1 + e^{\bf{X}\beta}})^{1-y_i}$$ 
+and thus we can calculate the log-likelihood function, gradient and Hessian matrix respectively.:
+$$l(\beta) = \sum_{i = 0}^{n} ( y_i * X\beta - log(1 + e^{X\beta})) $$
+$$\nabla l(\beta) = \begin{pmatrix}
+\sum_{i=1}^{n} (y_{i}-\pi_i) \\ 
+\sum_{i=1}^{n} x_{i1} \times\left(y_{i}- \pi_i\right) \\
+. \\
+. \\
+. \\
+\sum_{i=1}^{n} x_{in} \times\left(y_{i}- \pi_i\right) \\
+\end{pmatrix}$$
+ $$
+\begin{aligned}
+\nabla^{2} f\left(\beta\right) &=-\sum_{i=1}^{n}\left(\begin{array}{c}
+1 \\
+x_{i}
+\end{array}\right)\left(\begin{array}{cc}
+1 & x_{i}
+\end{array}\right) \pi_{i}\left(1-\pi_{i}\right) \\
+&=-\left(\begin{array}{cc}
+\sum \pi_{i}\left(1-\pi_{i}\right) & \sum x_{i} \pi_{i}\left(1-\pi_{i}\right) \\
+\sum x_{i} \pi_{i}\left(1-\pi_{i}\right) & \sum x_{i}^{2} \pi_{i}\left(1-\pi_{i}\right)
+\end{array}\right)
+\end{aligned}
+$$  
+***Model Explanation***  
+With those parameters above, we can apply the Newton-Raphson algorithm to calculate $\beta$ with the following equation in each iteration:
+$$
+\boldsymbol{\beta}_{\boldsymbol{i}+\mathbf{1}}=\boldsymbol{\beta}_{\boldsymbol{i}}-\left[\nabla^{2} l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)\right]^{-1} \nabla l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)
+$$
+We also apply two modifications: step-halving and re-direction. Both modification are meant to ensure the likelihood is increasing the the ascent direction at each iteration.  
+***Results***
+We apply the modified Newton-Raphson algorithm on the first ten features(mean) and get the following result:
+```{r}
+knitr::include_graphics("./NR_result1.png")
+```
 
 
 ### Logistic-LASSO
