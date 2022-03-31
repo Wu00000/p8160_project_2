@@ -430,4 +430,7 @@ as.tibble(res) %>%
   geom_line(show.legend = FALSE) + scale_x_reverse(limits = c(log(max_lambda2), 0))
 ```
 
+```{r}
+result = read.csv("cv_results.csv")
+```
 
