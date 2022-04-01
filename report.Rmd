@@ -1,5 +1,5 @@
 ---
-title: "P8160 Group Project 2: Breast Cancer Diagnosis and Optimizations"
+title: "P8160 Group Project 2: Logistic and Lasso-logistic Regression for Breast Cancer Diagnosis Prediction"
 author: "Wenhan Bao | Tianchuan Gao | Jialiang Hua | Qihang Wu | Paula Wu"
 date: "3/25/2022"
 output: pdf_document
@@ -247,8 +247,8 @@ knitr::kable(caption = "Newton-Raphson Results of Mean Features")
 ```
 We also compare this to the `glm` result and check if they match in the first three digits. The results come to all true and this model fits well.   
 
-## Pathwise Logistic-LASSO Model
-For the Pathwise logistic-lasso model, we first select $\lambda_{max} = 218.13$ to maximize the inner product of response and all variables. The lasso solution path is shown in **(Fig 3)**. With a goal to minimize the objective function and have a relatively high AUC, we tried a sequence of $\lambda$ from 0 to 3 and found that the minimum value would be taken under when $\lambda$ = 1.57 **(Fig 4)**, which means the optimal solution will be computed for this optimal $\lambda$ value.
+## Logistic-LASSO Model
+For the Pathwise logistic-lasso model, we first select $\lambda_{max} = 218.13$ (around 5.4 on the log scale) to maximize the inner product of response and all variables so that all coefficients will be shrunk to zero. The lasso solution path is shown in **(Fig 3)**. With a goal to minimize the objective function and have a relatively high AUC, we tried a descending sequence of $\lambda$ from 3 to 0, used 5-fold cross-validation, and found that the minimum value would be taken under when $\lambda$ = 1.57 (around 0.451 on the log scale) **(Fig 4)**, which means the optimal solution will be computed for this optimal $\lambda$ value.
 
 ```{r, echo = FALSE}
 tidy.path <- read.csv("lasso_path.csv")
@@ -264,11 +264,12 @@ ggplot(data = tidy.path, aes(x = loglambda, y = value, color = beta, group = bet
 result = read.csv("cv_results.csv") %>% 
     filter(lambda != 0) %>% 
     ggplot(aes(x = lambda, y = mean_auc)) + 
-    geom_point() + 
-    geom_errorbar(aes(ymin = mean_auc - sd_auc, ymax = mean_auc + sd_auc), width = .2) +
-    geom_vline(xintercept = 1.57, linetype="dotted", 
-               color = "blue", size=1) + 
-    labs(title = "Fig 4 Comparing the AUC for different lambda")
+    geom_point(aes(alpha = .2), show.legend = FALSE) + 
+    geom_errorbar(aes(ymin = mean_auc - sd_auc, ymax = mean_auc + sd_auc), width = .05) +
+    geom_vline(xintercept = 1.57, linetype = "dotted", 
+               color = "blue", size = 1) + ylim(0.965, 1.001) +
+    labs(title = "Fig 4 Comparing the AUC for different lambda",
+         y = "AUC")
 result
 ```
 
@@ -277,21 +278,24 @@ read.csv("compare_beta.csv") %>%
   knitr::kable(caption = "Comparing the coefficients for optimal and full model")
 ```
 
-In the above table, we directly compare the coefficients estimates $\beta$ for all 30 variables and $\beta_0$ for intercept. In the optimal lasso model, there are only ten variables included while the rest predictors are all shrinked towards zero.  
+In the above table **(Table 2)**, we directly compare the coefficients estimates $\beta$ for all 30 variables and $\beta_0$ for intercept. In the optimal lasso model, there are only ten variables included while the rest predictors are all shrunk towards zero.  
 
-## Comparsion: "Optimal" model vs. "Full" model 
-
+## Comparsion: "Optimal" model vs. "Full" model  
 As the name suggested, the "optimal" model has $\lambda = 1.5705$ as its tuning parameter while the "full" model has $\lambda = 0$. We evaluate both models and obtain their AUC scores: optimal model has an AUC of 0.9994 and the full model has an AUC of 1. Thus, we concluded that the full model has a better prediction, even though the prediction performance of these two models only differ by 0.0006. 
 
 # Conclusion and Discussion
  
-Here, we totally use three different optimization methods and try to compare the performance of different methods. Based on the results of coefficients, we could tell that Newton-Raphson has a relatively bad performance for this dataset and we guess the using of inverse of Hessian matrix is actually not accurate, especially when predictors are large so that we guess we could try alternatives to replace Hessian matrix. When concentrating on the results of full and optimal model selected by pathwise coordinate-wise lasso model, it's quite interesting that the full model has a perfect classification result. One plausible reason could be that the data is well separated for benign and malignant breast cancer.
+Here, we use three different optimization methods and try to compare the performance of different methods. Based on the results of coefficients, we could tell that Newton-Raphson has a relatively bad performance for this dataset and we guess the using of inverse of Hessian matrix is actually not accurate and not efficient, especially for high-dimensional covariates. Therefore we could try alternatives to replace Hessian matrix. Meanwhile, to better evaluate the efficiency of the coordinate-wise descent algorithm in our project, we could also use the `glmnet` package to fit generalized models with the Lasso penalty. Finally, when concentrating on the results of full and optimal model selected by the logistic-lasso model, it's quite interesting that the full model has a better classification result. One plausible reason could be that the data is well separated for benign and malignant breast cancer in the beginning.
 
 
 # Contributions
 We contributed to this project evenly.
 
+\newpage
+\pagebreak
 # Appendix
+
+The following is the code for this project. For more information, please click [here](https://github.com/Wu00000/p8160_project_2.git).
 
 ```{r appendix, eval = FALSE, echo = TRUE, warnings = FALSE, message=FALSE}
 library(tidyverse)
@@ -666,9 +670,11 @@ result = read.csv("cv_results.csv")[-139,] %>%
 result
 ```
 
+
 # Reference
 
-
+[1] Data: breast_cancer.csv
+[2] CV illustration: https://towardsdatascience.com/cross-validation-k-fold-vs-monte-carlo-e54df2fc179b
 
 
 
