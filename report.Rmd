@@ -144,7 +144,7 @@ read.csv("compare_beta.csv") %>%
   knitr::kable(caption = "Comparing the coefficients for optimal and full model")
 ```
 
-In the above table, we directly compare the coefficients estimates $\beta$ for all 30 variables and $\beta_0$ for intercept (V1-V31 represent the $\beta$). In the optimal lasso model, there are only ten variables included while the rest predictors are all shrinked towards zero.  
+In the above table, we directly compare the coefficients estimates $\beta$ for all 30 variables and $\beta_0$ for intercept. In the optimal lasso model, there are only ten variables included while the rest predictors are all shrinked towards zero.  
 
 ## Comparsion: "Optimal" model vs. "Full" model 
 
