@@ -673,7 +673,7 @@ result
 
 # Reference
 
-[1] Data: breast_cancer.csv
+[1] Data: breast_cancer.csv  
 [2] CV illustration: https://towardsdatascience.com/cross-validation-k-fold-vs-monte-carlo-e54df2fc179b
 
 
