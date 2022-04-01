@@ -152,13 +152,11 @@ As the name suggested, the "optimal" model has $\lambda = 1.5705$ as its tuning 
 
 # Conclusion and Discussion
  
-It's quite interesting that the full model has a perfect classification result. One plausible reason could be that the data is well separated for benign and malignant breast cancer.
+Here, we totally use three different optimization methods and try to compare the performance of different methods. Based on the results of coefficients, we could tell that Newton-Raphson has a relatively bad performance for this dataset and we guess the using of inverse of Hessian matrix is actually not accurate, especially when predictors are large so that we guess we could try alternatives to replace Hessian matrix. When concentrating on the results of full and optimal model selected by pathwise coordinate-wise lasso model, it's quite interesting that the full model has a perfect classification result. One plausible reason could be that the data is well separated for benign and malignant breast cancer.
 
 
 # Contributions
 We contributed to this project evenly.
-
-
 
 # Appendix
 
