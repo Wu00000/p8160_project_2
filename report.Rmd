@@ -239,7 +239,7 @@ In our implementation, we initially choose 30 equally spaced $\lambda$ from $e^{
 
 
 # Results
-## Newton-Raphson Methods
+## Newton-Raphson Method & Logistic Regression
 We apply the modified Newton-Raphson algorithm on the first 10 features(mean) since the result of all 30 features is not good.  
 ```{r echo=FALSE}
 read.csv("NR_result1.csv")%>%
