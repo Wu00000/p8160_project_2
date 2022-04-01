@@ -6,10 +6,27 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE, message = FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
 library(tidyverse)
+library(ggplot2)
 library(corrplot)
+library(pROC)
+library(caret)
+library(patchwork)
+
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
 
 
@@ -39,10 +56,114 @@ The dataset we uses contains 569 observations and 33 columns, including 357 beni
 Our goal is to build a predictive model based on logistic regression to facilitate cancer diagnosis. 
 
 
-
 # Methods
 ## Exploratory Data Analysis (EDA)
 Firstly, we imported and cleaned the data and conducted exploratory data analysis. We plotted the correlation plot of all the predictors by R. From the plot, we can find that there is a high correlation between many of the predictors. This is because our predictors include mean, standard deviation and the largest values of the distributions of 10 features, which means that some predictors can be calculated by other predictors. Then, we made the feature plots to explore the relationship between binary diagnosis outcome and all our predictors to determine the potential effective predictors.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=8, fig.height=8}
+# --- Import data ---
+breast_cancer = 
+  read_csv("./data/breast-cancer.csv") %>% 
+  dplyr::select(-c(1, 33)) %>% 
+  janitor::clean_names() %>% 
+  # add extra row
+  add_row(diagnosis = 'B', radius_mean = 7.76, texture_mean = 24.54,
+          perimeter_mean = 47.92, area_mean = 181, smoothness_mean = 0.05263,
+          compactness_mean = 0.04362, concavity_mean = 0, 
+          concave_points_mean = 0, symmetry_mean = 0.1587,
+          fractal_dimension_mean = 0.05884, radius_se = 0.3857, 
+          texture_se = 1.428, perimeter_se = 2.548, area_se = 19.15,
+          smoothness_se = 0.007189, compactness_se = 0.00466, concavity_se = 0,
+          concave_points_se = 0, symmetry_se = 0.02676, 
+          fractal_dimension_se = 0.002783, radius_worst = 9.456, 
+          texture_worst = 30.37, perimeter_worst = 59.16, area_worst = 268.6,
+          smoothness_worst = 0.08996, compactness_worst = 0.06444,
+          concavity_worst = 0, concave_points_worst = 0, 
+          symmetry_worst = 0.2871, fractal_dimension_worst = 0.07039) %>% 
+  mutate(diagnosis = 
+           as.numeric(as.factor(recode(diagnosis, `M` = 1, `B` = 0))) - 1) %>% 
+  mutate_each_(funs(scale(.)), c(2:31))
+
+
+# --- Data partition (8:2) ---
+set.seed(2022)
+trRows <- createDataPartition(breast_cancer$diagnosis, p = 0.8, list = FALSE)
+
+# --- `mean` predictors for Newton-Raphson method ---
+pred_1 <- as.tibble(breast_cancer[2:11])
+bc_scale1 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
+                             pred_1, outcome = breast_cancer$diagnosis))
+
+# train
+bc_scale1 <- bc_scale1[trRows, ]
+bc_scale1_x <- bc_scale1[, -12]
+bc_scale1_y <- bc_scale1[, 12]
+
+# test
+t_bc_scale1_x <- bc_scale1[-trRows, -12]
+t_bc_scale1_y <- bc_scale1[-trRows, 12]
+
+# --- All predictors for lasso & CV ---
+pred_2 <- as.tibble(breast_cancer[2:31])
+bc_scale2 <- as.matrix(cbind(intercept = rep(1, nrow(breast_cancer)), 
+                             pred_2, outcome = breast_cancer$diagnosis))
+
+# train
+bc_scale2 <- bc_scale2[trRows, ]
+bc_scale2_x <- bc_scale2[, -32]
+bc_scale2_y <- bc_scale2[, 32]
+
+# test
+t_bc_scale2_x <- bc_scale2[-trRows, -32]
+t_bc_scale2_y <- bc_scale2[-trRows, 32]
+
+# ----EDA----
+
+# --- Correlation plot ---
+corrplot::corrplot(cor(breast_cancer[2:31]), type = "full",
+                   tl.cex = .7, tl.col = "black", title = "Correlation plot")
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# --- Features plots ---
+bc = read.csv("./data/breast-cancer.csv") %>% 
+  mutate(diagnosis = factor(diagnosis))
+
+#mean
+cancer_mean = bc[, 3:12] %>% as_tibble() 
+colnames(cancer_mean) = gsub("_mean", "", colnames(cancer_mean))
+featurePlot(x = cancer_mean,
+            y = bc$diagnosis,
+            scales = list(x = list(relation = "free"),
+                          y = list(relation = "free")),
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2),
+            main = "Feature plot of the response and mean of the features")
+
+#se
+cancer_se = bc[, 13:22] %>% as_tibble() 
+colnames(cancer_se) = gsub("_se", "", colnames(cancer_se))
+featurePlot(x = cancer_se,
+            y = bc$diagnosis,
+            scales = list(x = list(relation = "free"),
+                          y = list(relation = "free")),
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2),
+            main = "Feature plot of the response and SD of the features")
+
+#largest
+cancer_max = bc[, 23:32] %>% as_tibble() 
+colnames(cancer_max) = gsub("_worst", "", colnames(cancer_max))
+featurePlot(x = cancer_max,
+            y = bc$diagnosis,
+            scales = list(x = list(relation = "free"),
+                          y = list(relation = "free")),
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2),
+            main = "Feature plot of the response and largest value the of features")
+```
+
 
 ## Modified Newton-Raphson Algorithm
 ***Model Parameters***  
@@ -156,7 +277,7 @@ We contributed to this project evenly.
 
 # Appendix
 
-```{r setup, echo = FALSE, warnings = FALSE, message=FALSE}
+```{r appendix, eval = FALSE, echo = TRUE, warnings = FALSE, message=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(corrplot)
