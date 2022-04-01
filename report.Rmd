@@ -18,15 +18,10 @@ knitr::opts_chunk$set(
   fig.align = "center"
 )
 
-theme_set(theme_minimal() + theme(legend.position = "bottom"))
-
-options(
-  ggplot2.continuous.colour = "viridis",
-  ggplot2.continuous.fill = "viridis"
-)
-
-scale_colour_discrete = scale_colour_viridis_d
-scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom",
+                                  plot.title = element_text(size = 10, 
+                                                            hjust = 0.5, 
+                                                            face = "bold")))
 ```
 
 
@@ -59,6 +54,7 @@ Our goal is to build a predictive model based on logistic regression to facilita
 # Methods
 ## 1. Exploratory Data Analysis (EDA)
 We imported and cleaned the data and conducted EDA. We plotted the correlation plot **(Fig 1)** of all the predictors. From that, we find that there is a high correlation between many of the predictors. This is because our predictors include mean, standard deviation and the largest values of the distributions of 10 features, which means that some predictors can be calculated from others. Then, we made the feature plots **(Fig 2)** to explore the relationship between binary diagnosis outcome and all predictors to determine the potential effective predictors. Features such as the mean of "compactness", "radius", "concavity", "perimeter", "area", and "concave points" clearly distinguish benign breast cancer images from the malignant ones - benign tissues tend to have lower mean values on the scale compare to the malignant tissues.
+\hfill\break
 \hfill\break
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # --- Import data ---
@@ -121,10 +117,11 @@ t_bc_scale2_y <- bc_scale2[-trRows, 32]
 # --- Correlation plot ---
 corrplot::corrplot(cor(breast_cancer[2:31]), 
                    type = "full",
-                   tl.cex = .7, 
+                   tl.cex = 0.7, 
                    tl.col = "black", 
                    title = "Fig 1 Correlation Plot",
-                   mar = c(0,0,1,0))
+                   mar = c(0,0,1,0),
+                   cex.main = 0.75)
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -136,6 +133,9 @@ bc = read.csv("./data/breast-cancer.csv") %>%
 #mean
 cancer_mean = bc[, 3:12] %>% as_tibble() 
 colnames(cancer_mean) = gsub("_mean", "", colnames(cancer_mean))
+theme1 = trellis.par.get()
+theme1$fontsize$text = 8
+trellis.par.set(theme1)
 featurePlot(x = cancer_mean,
             y = bc$diagnosis,
             scales = list(x = list(relation = "free"),
@@ -143,7 +143,10 @@ featurePlot(x = cancer_mean,
             plot = "density", pch = "|",
             auto.key = list(columns = 2),
             main = "Fig 2.1 Response and mean of features")
-
+```
+\hfill\break
+\hfill\break
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #se
 cancer_se = bc[, 13:22] %>% as_tibble() 
 colnames(cancer_se) = gsub("_se", "", colnames(cancer_se))
@@ -154,7 +157,9 @@ featurePlot(x = cancer_se,
             plot = "density", pch = "|",
             auto.key = list(columns = 2),
             main = "Fig 2.2 Response and SD of features")
+```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #largest
 cancer_max = bc[, 23:32] %>% as_tibble() 
 colnames(cancer_max) = gsub("_worst", "", colnames(cancer_max))
@@ -250,7 +255,8 @@ tidy.path <- read.csv("lasso_path.csv")
 
 ggplot(data = tidy.path, aes(x = loglambda, y = value, color = beta, group = beta)) +
   geom_line(show.legend = FALSE) + 
-  scale_x_reverse() + labs(title = "Fig 3 Lasso Solution Path")
+  scale_x_reverse() + 
+  labs(title = "Fig 3 Lasso Solution Path")
 ```
 
 
@@ -262,8 +268,7 @@ result = read.csv("cv_results.csv") %>%
     geom_errorbar(aes(ymin = mean_auc - sd_auc, ymax = mean_auc + sd_auc), width = .2) +
     geom_vline(xintercept = 1.57, linetype="dotted", 
                color = "blue", size=1) + 
-    labs(title = "Fig 4 Comparing the AUC for different lambda") +
-    theme(plot.title = element_text(hjust = 0.5)) + ylim(0.97, 1.002)
+    labs(title = "Fig 4 Comparing the AUC for different lambda")
 result
 ```
 
