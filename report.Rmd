@@ -1,21 +1,21 @@
 ---
 title: "P8160 Group Project 2: Breast Cancer Diagnosis and Optimizations"
-author: "Wenhan Bao | Tianchuan Gao | Jialiang Hua  | Qihang Wu | Paula Wu"
+author: "Wenhan Bao | Tianchuan Gao | Jialiang Hua | Qihang Wu | Paula Wu"
 date: "3/25/2022"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE, message = FALSE}
 library(tidyverse)
-library(ggplot2)
 library(corrplot)
 library(pROC)
 library(caret)
 library(patchwork)
 
 knitr::opts_chunk$set(
-  warning = FALSE,
-  message = FALSE
+  fig.width = 6,
+  out.width = "75%",
+  fig.align = "center"
 )
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
@@ -59,8 +59,8 @@ Our goal is to build a predictive model based on logistic regression to facilita
 # Methods
 ## 1. Exploratory Data Analysis (EDA)
 We imported and cleaned the data and conducted EDA. We plotted the correlation plot **(Fig 1)** of all the predictors. From that, we find that there is a high correlation between many of the predictors. This is because our predictors include mean, standard deviation and the largest values of the distributions of 10 features, which means that some predictors can be calculated from others. Then, we made the feature plots **(Fig 2)** to explore the relationship between binary diagnosis outcome and all predictors to determine the potential effective predictors. Features such as the mean of "compactness", "radius", "concavity", "perimeter", "area", and "concave points" clearly distinguish benign breast cancer images from the malignant ones - benign tissues tend to have lower mean values on the scale compare to the malignant tissues.
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+\hfill\break
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # --- Import data ---
 breast_cancer = 
   read_csv("./data/breast-cancer.csv") %>% 
@@ -119,8 +119,12 @@ t_bc_scale2_y <- bc_scale2[-trRows, 32]
 
 # ---- EDA1 ----
 # --- Correlation plot ---
-corrplot::corrplot(cor(breast_cancer[2:31]), type = "full",
-                   tl.cex = .7, tl.col = "black", title = "Fig 1 Correlation Plot")
+corrplot::corrplot(cor(breast_cancer[2:31]), 
+                   type = "full",
+                   tl.cex = .7, 
+                   tl.col = "black", 
+                   title = "Fig 1 Correlation Plot",
+                   mar = c(0,0,1,0))
 ```
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -241,7 +245,7 @@ We also compare this to the glm result and check if they match in the first thre
 ## Pathwise Logistic-LASSO Model
 In the part of Pathwise logistic-lasso model, we firstly select the maximum $\lambda$ which is the inner product of response and all variables and $\lambda_{max}$ = 218.13. We show the lasso solution path **(Fig 3)**. By using a sequence of $\lambda$ to minimize the objective function and have a relatively higher AUC **(Fig 4)**, the minimum value would be taken under when $\lambda$ = 1.57 which means the optimal solution will be computed for this optimal $\lambda$ value.
 
-```{r, echo = FALSE, fig.width = 8, fig.height = 5}
+```{r, echo = FALSE}
 tidy.path <- read.csv("lasso_path.csv")
 
 ggplot(data = tidy.path, aes(x = loglambda, y = value, color = beta, group = beta)) +
@@ -250,7 +254,7 @@ ggplot(data = tidy.path, aes(x = loglambda, y = value, color = beta, group = bet
 ```
 
 
-```{r,fig.width=8,fig.height=6,echo=FALSE}
+```{r,echo=FALSE}
 result = read.csv("cv_results.csv") %>% 
     filter(lambda != 0) %>% 
     ggplot(aes(x = lambda, y = mean_auc)) + 
