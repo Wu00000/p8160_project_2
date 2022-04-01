@@ -53,7 +53,7 @@ Our goal is to build a predictive model based on logistic regression to facilita
 
 # Methods
 ## 1. Exploratory Data Analysis (EDA)
-We imported and cleaned the data and conducted EDA. We plotted the correlation plot **(Fig 1)** of all the predictors. From that, we find that there is a high correlation between many of the predictors. This is because our predictors include mean, standard deviation and the largest values of the distributions of 10 features, which means that some predictors can be calculated from others. Then, we made the feature plots **(Fig 2)** to explore the relationship between binary diagnosis outcome and all predictors to determine the potential effective predictors. Features such as the mean of "compactness", "radius", "concavity", "perimeter", "area", and "concave points" clearly distinguish benign breast cancer images from the malignant ones - benign tissues tend to have lower mean values on the scale compare to the malignant tissues.
+We imported and cleaned the data and conducted EDA. We plotted the correlation plot **(Fig 1)** of all the predictors. From that, we find that there is a high correlation between many of the predictors. This is because our predictors include mean, standard deviation and the largest values of the distributions of 10 features, which means that some predictors can be calculated from others. Then, we made the feature plots **(Fig 2)** to explore the relationship between binary diagnosis outcome and all predictors to determine the potential effective predictors. Features such as the mean of "compactness", "radius", "concavity", "perimeter", "area", and "concave points" clearly distinguish benign breast cancer images from the malignant ones - benign tissues tend to have lower mean values on the scale compared to the malignant tissues.
 \hfill\break
 \hfill\break
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -212,17 +212,17 @@ $$
 We also apply two modifications: step-halving and re-direction. Both modification are meant to ensure the likelihood is increasing the the ascent direction at each iteration.  
 
 ## 3. Logistic-LASSO
-***Least Absolute Shrinkage and Selection Operator (LASSO)*** To estimate coefficients through Newton-Raphson method, it is necessary to compute the corresponding inverse of Hessian Matrix $[\nabla^2f(\theta_{i-1})]^{-1}$. However, the computational burden of calculation will increase as the dimension of predictors increases and the collinearity will also be a problem. Therefore, we use a regularization method, LASSO, to shrink coefficients and perform variable selections. For regression lasso, the objective function is: 
+***Least Absolute Shrinkage and Selection Operator (LASSO)*** To estimate coefficients through Newton-Raphson method, it is necessary to compute the corresponding inverse of Hessian Matrix $[\nabla^2f(\theta_{i-1})]^{-1}$. However, the computational burden of calculation will increase as the dimension of predictors increase. On top of that, the collinearity could also be a problem. Therefore, we use a regularization method, LASSO, to shrink coefficients and perform variable selections. For regression lasso, the objective function is: 
 $$f(\beta) = \frac{1}{2}\sum_{i=1}^{n}(y_i - \sum_{j=1}^{p}x_{i,j}\beta_j)^2 + \lambda\sum_{i=1}^{p}|\beta_j|,$$ where the first term is residual sum of squares (RSS) and the second term is the lasso l1 penalty. Noted that the $x_{i,j}$ needs to be standardized before LASSO so that the penalty will be equally applied to all predictors. For each single predictor, the LASSO solution is like: 
 $$\hat\beta^{lasso}(\lambda) = S(\hat\beta, \lambda) = \begin{cases} \hat\beta - \lambda, \text{ if } \hat\beta > 0 \text{ and } \lambda < |\hat\beta| \\ \hat\beta + \lambda, \text{ if } \hat\beta < 0 \text{ and } \lambda < |\hat\beta| \\ 0, \text{ if } \lambda > |\hat\beta|, \end{cases}$$ where $S(\hat\beta, \lambda)$ is called soft threshold. The basic idea of this function is to shrink all $\beta$ coefficients between $-\lambda$ and $\lambda$.  
 
-***Coordinate-wise Descent Algorithm*** Another approach to solve the complex computation of inverse Hessian Matrix is coordinate descent approach, which starts with an initial guess of parameters $\theta$, optimize one parameter at one time based on the best knowledge of other parameters, and use the results as the start values for the next iteration. We then repeat the above steps until convergence. Finally, this approach tries to minimize the following objective function when considering a lasso penalty: 
+***Coordinate-wise Descent Algorithm*** Another approach to solve the complex computation of inverse Hessian Matrix is coordinate descent approach, which starts with an initial guess of parameters $\theta$, optimizes one parameter at a time based on the best knowledge of other parameters, and uses the obtained results as the start values for the next iteration. We repeat the above steps until convergence. Finally, this approach tries to minimize the following objective function when considering a lasso penalty: 
 $$f(\beta_j) = \frac{1}{2}\sum_{i=1}^{n}(y_i - \sum_{k\neq j}x_{i,j}\tilde\beta_k - x_{i,j}\beta_j)^2 + \lambda\sum_{k\neq j}|\tilde\beta_k| + \lambda|\beta_j|,$$ where $\tilde\beta$ represents the current estimates of $\beta$ and therefore constants. If we also consider a weight $\omega_i$ is associated with each observation, then the updated $\beta_j$ in this case is: $$\tilde\beta_j(\lambda) \leftarrow \frac{S(\sum_{i}\omega_ix_{i,j}(y_i - \tilde y_{i}^{(-j)}), \lambda)}{\sum_{i}\omega_ix_{i,j}^2}, $$ where $\tilde y_i^{(-j)} = \sum_{k\neq j}x_{i}\tilde\beta_k$. From here, we use the Taylor expansion. So the log-likelihood around "current estimate" is: 
 $$l(\beta) = -\frac{1}{2n}\sum_{i=1}^{n}\omega_i(z_i - X_i\beta)^2, $$ where working weights $\omega_i = \tilde\pi_i(1 - \tilde\pi_i)$, working response $z_i = X_i\tilde\beta + \frac{y_i - \tilde\pi_i}{\tilde\pi_i(1 - \tilde\pi_i)}$, and $\tilde\pi_i = \frac{exp(X_i\tilde\beta)}{1 + exp(X_i\tilde\beta)}$.  
 Finally, similar to regression lasso, the logistic lasso can be written as a penalized weighted least-squares problem like this: 
 $$min_{\beta}L(\beta) = {-l(\beta) + \lambda\sum_{j=0}^{p}|\beta_j|}$$.
 
-***Pathwise Coordinate-wise Algorithm*** The difference between pathwise coordinate-wise method and coordinate-wise method is that a sequence value of lambda is required to input. There are some steps taken as followed:
+***Pathwise Coordinate-wise Algorithm*** The difference between pathwise coordinate-wise method and coordinate-wise method is that a sequence value of lambda is required for input. There are some steps taken as followed:
 
 + Select a $\lambda_{max}$ for all the estimate $\beta$ = 0 which is the inner product ($max_l\left \langle X_l,y \right \rangle$).
 
@@ -235,20 +235,20 @@ $$min_{\beta}L(\beta) = {-l(\beta) + \lambda\sum_{j=0}^{p}|\beta_j|}$$.
 ***5-fold Cross-validation***
 In a nutshell, a 5-fold cross-validation first splits the shuffled training data (80% of the whole dataset) into 5 parts and takes one group as the hold-out set (validation set) while fitting the model using the remaining 4 training sets. After a model is fitted, we evaluate and retain the model performance, namely AUC and RSS, and move on to the next iteration. After 5 iterations, we calculated the mean RSS and the mean AUC with standard deviations. Our goal is to find an optimal $\lambda$ that maximizes the mean AUC. 
 
-In our implementation, we initially choose 30 equally spaced $\lambda$ from $e^{(-4,3)}$. The reason why the $\lambda$'s are widespread is that we would like to determine the rough range, instead of the precise value, of the optimum of this tuning parameter first. For each $\lambda$, we ran the 5-fold cross-validation. Within each fold, we use Coordinate-wise optimization to update the coefficients vectors $\boldsymbol{\beta}$ and evaluate the performance by calculating AUC and RSS. Among 30 $\lambda$, the optimal $\lambda$ that maximizes the AUC equals 2.3681. We then narrow down the range to (3, 0) and choose 150 equally spaced $\lambda$ in between. The best $\lambda$ selected by cross-validation equals 1.5705. 
+In our implementation, we initially choose 30 equally spaced $\lambda$ from $e^{(-4,3)}$. The reason why the $\lambda$'s are widespread is that we would like to determine the rough range, instead of the precise value, of the optimum of this tuning parameter first. For each $\lambda$, we ran the 5-fold cross-validation. Within each fold, we use Coordinate-wise optimization to update the coefficients vectors $\boldsymbol{\beta}$ and evaluate the performance by calculating AUC and RSS. Among 30 $\lambda$, the optimal $\lambda$ that maximizes the AUC equals 2.3681. We then narrow down the range to (3, 0) and choose 150 equally spaced $\lambda$ in between. In this case, the best $\lambda$ selected by cross-validation equals 1.5705. 
 
 
 # Results
 ## Newton-Raphson Methods
-We apply the modified Newton-Raphson algorithm on the first ten features(mean) since the result of all 30 features is not good.  
+We apply the modified Newton-Raphson algorithm on the first 10 features(mean) since the result of all 30 features is not good.  
 ```{r echo=FALSE}
 read.csv("NR_result1.csv")%>%
 knitr::kable(caption = "Newton-Raphson Results of Mean Features")
 ```
-We also compare this to the glm result and check if they match in the first three digits. The results come to all true and this model fits well.   
+We also compare this to the `glm` result and check if they match in the first three digits. The results come to all true and this model fits well.   
 
 ## Pathwise Logistic-LASSO Model
-In the part of Pathwise logistic-lasso model, we firstly select the maximum $\lambda$ which is the inner product of response and all variables and $\lambda_{max}$ = 218.13. We show the lasso solution path **(Fig 3)**. By using a sequence of $\lambda$ to minimize the objective function and have a relatively higher AUC **(Fig 4)**, the minimum value would be taken under when $\lambda$ = 1.57 which means the optimal solution will be computed for this optimal $\lambda$ value.
+For the Pathwise logistic-lasso model, we first select $\lambda_{max} = 218.13$ to maximize the inner product of response and all variables. The lasso solution path is shown in **(Fig 3)**. With a goal to minimize the objective function and have a relatively high AUC, we tried a sequence of $\lambda$ from 0 to 3 and found that the minimum value would be taken under when $\lambda$ = 1.57 **(Fig 4)**, which means the optimal solution will be computed for this optimal $\lambda$ value.
 
 ```{r, echo = FALSE}
 tidy.path <- read.csv("lasso_path.csv")
