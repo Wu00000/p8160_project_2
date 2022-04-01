@@ -11,9 +11,6 @@ library(corrplot)
 library(pROC)
 library(caret)
 library(patchwork)
-library(gridExtra)
-library(magrittr)
-library(kableExtra)
 
 knitr::opts_chunk$set(
   warning = FALSE,
@@ -206,9 +203,10 @@ NR_result1 =as.tibble(NR_result1) %>%
 colnames(NR_result1) = name1
 NR_result1 = NR_result1%>%
   pivot_longer(1:11,
-    names_to = " ",
+    names_to = "Features ",
     values_to = "Coefficient"
   )
+write.csv(NR_result1,file = "NR_result1.csv",row.names = FALSE)
 NR_result2=NewtonRaphson(bc_scale2_x, compute_stat, rep(1, 31))
 name2 = colnames(bc_scale2_x)
 NR_result2 =as.tibble(NR_result2) %>%

@@ -82,15 +82,6 @@ $$
 \boldsymbol{\beta}_{\boldsymbol{i}+\mathbf{1}}=\boldsymbol{\beta}_{\boldsymbol{i}}-\left[\nabla^{2} l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)\right]^{-1} \nabla l\left(\boldsymbol{\beta}_{\boldsymbol{i}}\right)$$
 We also apply two modifications: step-halving and re-direction. Both modification are meant to ensure the likelihood is increasing the the ascent direction at each iteration.  
 
-***Results***
-
-We apply the modified Newton-Raphson algorithm on the first ten features(mean) and get the following result:
-
-```{r eval=FALSE, include=FALSE}
-knitr::include_graphics("./NR_result1.png")
-```
-
-
 ## Logistic-LASSO
 ***Least Absolute Shrinkage and Selection Operator (LASSO)*** To estimate coefficients through Newton-Raphson method, it is necessary to compute the corresponding inverse of Hessian Matrix $[\nabla^2f(\theta_{i-1})]^{-1}$. However, the computational burden of calculation will increase as the dimension of predictors increases and the collinearity will also be a problem. Therefore, we use a regularization method, LASSO, to shrink coefficients and perform variable selections. For regression lasso, the objective function is: 
 $$f(\beta) = \frac{1}{2}\sum_{i=1}^{n}(y_i - \sum_{j=1}^{p}x_{i,j}\beta_j)^2 + \lambda\sum_{i=1}^{p}|\beta_j|,$$ where the first term is residual sum of squares (RSS) and the second term is the lasso l1 penalty. Noted that the $x_{i,j}$ needs to be standardized before LASSO so that the penalty will be equally applied to all predictors. For each single predictor, the LASSO solution is like: 
@@ -120,7 +111,12 @@ In our implementation, we initially choose 30 equally spaced $\lambda$ from $e^{
 
 # Results
 ## Newton-Raphson Methods
-
+We apply the modified Newton-Raphson algorithm on the first ten features(mean) since the result of all 30 features is not good.  
+```{r echo=FALSE}
+read.csv("NR_result1.csv")%>%
+knitr::kable()
+```
+We also compare this to the glm result and check if they match in the first three digits. The results come to all true and this model fits well.   
 
 ## Pathwise Logistic-LASSO Model
 
